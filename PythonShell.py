@@ -1,14 +1,20 @@
 import tkinter as tk
 import subprocess
-from tkinter import simpledialog
+from tkinter import simpledialog, Text, filedialog, messagebox
 import pika
 import hashlib
 
-import user_list
+import run_jar
+import user_management
 
+import user_list
 
 # Optimize later
 # Might want to separate functions into files
+rmq_connection = None
+disconnect_button = None
+rmq_connect_button = None
+
 
 def login():
     username = username_entry.get()
@@ -20,7 +26,7 @@ def login():
 
         if stored_password_hash == computed_password_hash:
             result_label.config(text="User successfully validated")
-            jar_func()
+            run_jar.jar_func()
             update_gui_after_login()
         else:
             result_label.config(text="Invalid credentials, please try again")
@@ -28,43 +34,47 @@ def login():
         result_label.config("No matching username found")
 
 
-def jar_func():
-    """
-    Run API upon button press?
-    """
-    # Replace with actual JAR file
-    jar_file_path = "C:/Users/Tedio/eclipse-workspace/Thesis-Research-API/research.jar"
-
-    try:
-        # Use the 'java' command to run the JAR file
-        subprocess.run(['java', '-jar', jar_file_path], check=True)
-    except subprocess.CalledProcessError as e:
-        result_label.config(text=f"Error running JAR file: {e}")
-        rmq_connect()
-
-
 def rmq_connect():
-    """
-    Button that handles connecting to RabbitMQ server
-    - Need to add option to close connection
-    """
+    global rmq_connection
     cloudamqp_uri = "amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb"
     try:
         rmq_connection = pika.BlockingConnection(pika.URLParameters(cloudamqp_uri))
         channel = rmq_connection.channel()
-
         channel.queue_declare(queue='My Queue')
-        # "ping" RabbitMQ to confirm a connection
-
-        # publish a test message
-
-        # Entry box for message, select format boxes, etc.
-
         print("Connected to RMQ_APP_Testing")
+        # rmq_connect_button.pack_forget()
+        disconnect_button = tk.Button(root, text="Disconnect from RabbitMQ", command=disconnect_rmq)
+        disconnect_button.pack()
 
-        rmq_connection.close()
+        user_id = username_entry.get()
+        message = f"User: {user_id} has connected."
+        channel.basic_publish(exchange='', routing_key='My Queue', body=message)
+
+        # Create a text box for entering messages
+        message_label = tk.Label(root, text="Enter your message:")
+        message_label.pack()
+        message_text = Text(root, height=5, width=40)
+        message_text.pack()
+
+        # Create a file upload button
+        upload_button = tk.Button(root, text="Upload File", command=upload_file)
+        upload_button.pack()
     except Exception as e:
         print(f"Could not connect to RabbitMQ, Error: {e}")
+
+
+def disconnect_rmq():
+    global rmq_connection
+    try:
+        if rmq_connection:
+            channel = rmq_connection.channel()
+            username = username_entry.get()
+            message = f"User {username} disconnected"
+            channel.basic_publish(exchange='', routing_key='My Queue', body=message)
+            rmq_connection.close()
+            rmq_connection = None
+    except Exception as e:
+        print(f"Could not disconnect from RabbitMQ, Error: {e}")
 
 
 def settings_toolbar():
@@ -72,6 +82,14 @@ def settings_toolbar():
     Contains an about section, possible settings, etc.
     """
     return
+
+
+def upload_file():
+    file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv"), ("PDF Files", "*.pdf")])
+    if file_path:
+        messagebox.showinfo("File Uploaded", f"File {file_path} has been uploaded.")
+        # Upload button
+        # MagicWormhole transfer
 
 
 def update_gui_after_login():
@@ -88,20 +106,6 @@ def update_gui_after_login():
     # Display metadata on right hand side
     rmq_connect_button = tk.Button(root, text="Connect to RabbitMQ", command=rmq_connect)
     rmq_connect_button.pack()
-
-
-def user_register():
-    """
-    - Registers a new username and hashed password
-    - Need to make sure to check for duplicates
-    - Possible password rules?
-    """
-    new_user = simpledialog.askstring("Add New User", "Please enter a username")
-    new_user_pass = simpledialog.askstring("Add New User", "Please enter a password")
-    new_password_hash = hashlib.sha256(new_user_pass.encode('utf-8')).hexdigest()
-    user_list.user_credentials[new_user] = new_password_hash
-    with open("user_list.py", "w") as user_base:
-        user_base.write(f"user_credentials = {user_list.user_credentials}")
 
 
 # Create the main window
@@ -121,7 +125,7 @@ password_entry = tk.Entry(root, show="*")  # Hide the password as asterisks
 login_button = tk.Button(root, text="Login", command=login)
 result_label = tk.Label(root, text="")
 
-add_user_button = tk.Button(root, text="Register a New User", command=user_register)
+add_user_button = tk.Button(root, text="Register a New User", command=user_management.user_register)
 add_user_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
 # Place widgets in the window
