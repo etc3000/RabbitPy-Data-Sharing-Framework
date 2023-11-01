@@ -1,6 +1,5 @@
 import tkinter as tk
-import subprocess
-from tkinter import simpledialog, Text, filedialog, messagebox
+from tkinter import Text, filedialog, messagebox
 import pika
 import hashlib
 
@@ -26,7 +25,8 @@ def login():
 
         if stored_password_hash == computed_password_hash:
             result_label.config(text="User successfully validated")
-            run_jar.jar_func()
+            # run_jar.jar_func()
+            # need to better define jar funcs first, for now just login
             update_gui_after_login()
         else:
             result_label.config(text="Invalid credentials, please try again")
@@ -52,15 +52,43 @@ def rmq_connect():
 
         # Create a text box for entering messages
         message_label = tk.Label(root, text="Enter your message:")
+        # Drop-down for message type
+        # Select recipient of message
+        # List of queues
         message_label.pack()
-        message_text = Text(root, height=5, width=40)
+        message_text = Text(root, height=5, width=20)
         message_text.pack()
 
-        # Create a file upload button
+        send_button = tk.Button(root, text="Send text to RabbitMQ", command=send_data)
+        send_button.pack()
+
+        queue_select = tk.Button(root, text="Please select your queue", command=queue_menu)
+
+        # Create a file upload button, supports csv and pdf
         upload_button = tk.Button(root, text="Upload File", command=upload_file)
         upload_button.pack()
+
+        # Once file is uploaded, display name and size
+        # upload_label = tk.Label(root, text = "File Name: " + file_name)
+        # upload_label.pack()
     except Exception as e:
         print(f"Could not connect to RabbitMQ, Error: {e}")
+
+
+def queue_menu():
+    # Pings RMQ for queues: My Queue, General, direct user message, etc.
+    return
+
+
+def send_data():
+    # this function gathers meta_data and sends a formatted message to RabbitMQ
+    # send to specified queue
+    return
+
+
+def magic_wormhole():
+    # perform file transfer
+    return
 
 
 def disconnect_rmq():
@@ -73,6 +101,7 @@ def disconnect_rmq():
             channel.basic_publish(exchange='', routing_key='My Queue', body=message)
             rmq_connection.close()
             rmq_connection = None
+            # kill app or return to login screen
     except Exception as e:
         print(f"Could not disconnect from RabbitMQ, Error: {e}")
 
@@ -88,7 +117,7 @@ def upload_file():
     file_path = filedialog.askopenfilename(filetypes=[("CSV Files", "*.csv"), ("PDF Files", "*.pdf")])
     if file_path:
         messagebox.showinfo("File Uploaded", f"File {file_path} has been uploaded.")
-        # Upload button
+        # Upload button, remember the size limit
         # MagicWormhole transfer
 
 
@@ -111,7 +140,7 @@ def update_gui_after_login():
 # Create the main window
 root = tk.Tk()
 root.title("RabbitMQ Messenger")
-root.geometry("400x400")
+root.geometry("600x600")
 # Need to resize
 
 rmq_img = tk.PhotoImage(file="C:/Users/Tedio/PycharmProjects/RabbitMG_GUI/rabbitmq_logo-1105942957.png")
@@ -142,3 +171,14 @@ result_label.pack()
 
 # Start the main event loop
 root.mainloop()
+
+"""
+- Connect/Disconnect on the top left
+- File Formats on bottom left
+- Messaging and file upload in Center
+- Queue Selection on top right
+- Server info and meta data on bottom right
+
+- Incoming message feed for user?
+- Sent messages?
+"""
