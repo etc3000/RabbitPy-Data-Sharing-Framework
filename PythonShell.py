@@ -1,3 +1,4 @@
+import subprocess
 import tkinter as tk
 from tkinter import Text, filedialog, messagebox
 import pika
@@ -43,8 +44,6 @@ def rmq_connect():
         channel.queue_declare(queue='My Queue')
         print("Connected to RMQ_APP_Testing")
         # rmq_connect_button.pack_forget()
-        disconnect_button = tk.Button(root, text="Disconnect from RabbitMQ", command=disconnect_rmq)
-        disconnect_button.pack()
 
         user_id = username_entry.get()
         message = f"User: {user_id} has connected."
@@ -59,6 +58,9 @@ def rmq_connect():
         message_text = Text(root, height=5, width=20)
         message_text.pack()
 
+        # channel.basic_publish(exchange='', routing_key='My Queue', body=message_text)
+        # print("Message sent")
+
         send_button = tk.Button(root, text="Send text to RabbitMQ", command=send_data)
         send_button.pack()
 
@@ -71,12 +73,18 @@ def rmq_connect():
         # Once file is uploaded, display name and size
         # upload_label = tk.Label(root, text = "File Name: " + file_name)
         # upload_label.pack()
+        disconnect_button = tk.Button(root, text="Disconnect from RabbitMQ", command=disconnect_rmq)
+        disconnect_button.pack()
+
     except Exception as e:
         print(f"Could not connect to RabbitMQ, Error: {e}")
 
 
 def queue_menu():
     # Pings RMQ for queues: My Queue, General, direct user message, etc.
+    proc = subprocess.Popen("/usr/sbin/rabbitmqctl list_queues", shell = True, stdout =subprocess.PIPE)
+    stdout_value = proc.communicate()[0]
+    print(stdout_value)
     return
 
 
@@ -178,7 +186,24 @@ root.mainloop()
 - Messaging and file upload in Center
 - Queue Selection on top right
 - Server info and meta data on bottom right
+- Meta data will be converted into JSON and sent to cloud
 
 - Incoming message feed for user?
 - Sent messages?
+
+
+From Nguyen - 
+User ID - The ID of the user sending the message.
+Message ID - The ID of the message.
+Message Type - The type relevant to the message.
+Data - The name(s) and size(s) of the data file(s).
+Data Convert Formats - The formats the user can convert to and from.
+Data Request Formats - The formats the user can read.
+Timestamp - The time the message was sent in UTC format.
+Origin Message ID - The message ID this message relates to or is in response to.
+Source User ID - The user ID this message relates to or is in response to.
+These fields are automatically filled from the information the user supplied when
+implementing the API and by relevant messages the user receives. The only fields that
+exist with every message sent are user id, message id, message type, and timestamp,
+the others are only needed for announcing the generated data and data requests.
 """
