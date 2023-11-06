@@ -32,7 +32,7 @@ def login():
         else:
             result_label.config(text="Invalid credentials, please try again")
     else:
-        result_label.config("No matching username found")
+        result_label.config(text="No matching username found")
 
 
 def rmq_connect():
@@ -51,30 +51,26 @@ def rmq_connect():
 
         # Create a text box for entering messages
         message_label = tk.Label(root, text="Enter your message:")
-        # Drop-down for message type
-        # Select recipient of message
-        # List of queues
-        message_label.pack()
+        message_label.grid(row=1, column=2, padx=10, pady=10)
         message_text = Text(root, height=5, width=20)
-        message_text.pack()
+        message_text.grid(row=2, column=2, padx=10, pady=10)
 
-        # channel.basic_publish(exchange='', routing_key='My Queue', body=message_text)
-        # print("Message sent")
-
+        # Send button
         send_button = tk.Button(root, text="Send text to RabbitMQ", command=send_data)
-        send_button.pack()
+        send_button.grid(row=3, column=2, padx=10, pady=10)
 
-        queue_select = tk.Button(root, text="Please select your queue", command=queue_menu)
+        # Queue selection and file format menus
+        queue_select_button = tk.Button(root, text="Select Queue", command=queue_menu)
+        queue_select_button.grid(row=0, column=3, padx=10, pady=10)
 
-        # Create a file upload button, supports csv and pdf
-        upload_button = tk.Button(root, text="Upload File", command=upload_file)
-        upload_button.pack()
+        file_format_menu = tk.OptionMenu(root, "File Format", "CSV", "PDF")  # Add more options as needed
+        file_format_menu.grid(row=1, column=1, padx=10, sticky="ne")
 
-        # Once file is uploaded, display name and size
-        # upload_label = tk.Label(root, text = "File Name: " + file_name)
-        # upload_label.pack()
+        request_format_menu = tk.OptionMenu(root, "Request Format", "CSV", "PDF")  # Add more options as needed
+        request_format_menu.grid(row=1, column=3, padx=10, pady=10)
+
         disconnect_button = tk.Button(root, text="Disconnect from RabbitMQ", command=disconnect_rmq)
-        disconnect_button.pack()
+        disconnect_button.grid(row=4, column=3, padx=10, pady=10)
 
     except Exception as e:
         print(f"Could not connect to RabbitMQ, Error: {e}")
@@ -82,7 +78,7 @@ def rmq_connect():
 
 def queue_menu():
     # Pings RMQ for queues: My Queue, General, direct user message, etc.
-    proc = subprocess.Popen("/usr/sbin/rabbitmqctl list_queues", shell = True, stdout =subprocess.PIPE)
+    proc = subprocess.Popen("/usr/sbin/rabbitmqctl list_queues", shell=True, stdout=subprocess.PIPE)
     stdout_value = proc.communicate()[0]
     print(stdout_value)
     return
@@ -133,23 +129,45 @@ def update_gui_after_login():
     """
     Screen after a successful login
     """
-    username_label.pack_forget()
-    username_entry.pack_forget()
-    password_label.pack_forget()
-    password_entry.pack_forget()
-    login_button.pack_forget()
-    result_label.pack_forget()
+    username_label.grid_forget()
+    username_entry.grid_forget()
+    password_label.grid_forget()
+    password_entry.grid_forget()
+    login_button.grid_forget()
+    result_label.grid_forget()
 
-    # Display metadata on right hand side
-    rmq_connect_button = tk.Button(root, text="Connect to RabbitMQ", command=rmq_connect)
-    rmq_connect_button.pack()
+    # CloudAMQP information (top left)
+    cloudamqp_info_label = tk.Label(root, text="CloudAMQP Info")
+    cloudamqp_info_label.grid(row=0, column=0, sticky="nw")
+
+    # Text message input (center)
+    message_label = tk.Label(root, text="Enter your message:")
+    message_label.grid(row=1, column=0, padx=10)
+    message_text = Text(root, height=5, width=20)
+    message_text.grid(row=2, column=0, padx=10)
+
+    # Send button
+    send_button = tk.Button(root, text="Send text to RabbitMQ", command=send_data)
+    send_button.grid(row=3, column=0, padx=10)
+
+    # Queue selection and file format menus
+    queue_select_button = tk.Button(root, text="Select Queue", command=queue_menu)
+    queue_select_button.grid(row=0, column=1, padx=10, sticky="ne")
+
+    file_format_menu = tk.OptionMenu(root, "File Format", "CSV", "PDF")  # Add more options as needed
+    file_format_menu.grid(row=1, column=1, padx=10, sticky="ne")
+
+    request_format_menu = tk.OptionMenu(root, "Request Format", "CSV", "PDF")  # Add more options as needed
+    request_format_menu.grid(row=2, column=1, padx=10, sticky="ne")
+
+    disconnect_button = tk.Button(root, text="Disconnect from RabbitMQ", command=disconnect_rmq)
+    disconnect_button.grid(row=0, column=0, sticky="nw", padx=10)
 
 
 # Create the main window
 root = tk.Tk()
 root.title("RabbitMQ Messenger")
 root.geometry("600x600")
-# Need to resize
 
 rmq_img = tk.PhotoImage(file="C:/Users/Tedio/PycharmProjects/RabbitMG_GUI/rabbitmq_logo-1105942957.png")
 
@@ -158,24 +176,25 @@ rmq_img_label = tk.Label(root, image=rmq_img)
 username_label = tk.Label(root, text="Username:")
 username_entry = tk.Entry(root)
 password_label = tk.Label(root, text="Password:")
-password_entry = tk.Entry(root, show="*")  # Hide the password as asterisks
+password_entry = tk.Entry(root, show="*")
 login_button = tk.Button(root, text="Login", command=login)
 result_label = tk.Label(root, text="")
 
 add_user_button = tk.Button(root, text="Register a New User", command=user_management.user_register)
-add_user_button.pack(side=tk.BOTTOM, padx=10, pady=10)
 
-# Place widgets in the window
-rmq_img_label.pack()
+# Place widgets in the window using grid
+rmq_img_label.grid(row=0, column=0, padx=10, pady=10)
 
-username_label.pack()
-username_entry.pack()
+username_label.grid(row=1, column=0, padx=10, pady=10)
+username_entry.grid(row=1, column=1, padx=10, pady=10)
 
-password_label.pack()
-password_entry.pack()
+password_label.grid(row=2, column=0, padx=10, pady=10)
+password_entry.grid(row=2, column=1, padx=10, pady=10)
 
-login_button.pack()
-result_label.pack()
+login_button.grid(row=3, column=0, padx=10, pady=10)
+result_label.grid(row=3, column=1, padx=10, pady=10)
+
+add_user_button.grid(row=4, column=0, padx=10, pady=10, columnspan=2)
 
 # Start the main event loop
 root.mainloop()
@@ -186,13 +205,14 @@ root.mainloop()
 - Messaging and file upload in Center
 - Queue Selection on top right
 - Server info and meta data on bottom right
-- Meta data will be converted into JSON and sent to cloud
+- Meta data will be converted into JSON and sent to RMQ
 
 - Incoming message feed for user?
 - Sent messages?
+- Start listening once connected to RMQ
 
 
-From Nguyen - 
+From Nguyen -
 User ID - The ID of the user sending the message.
 Message ID - The ID of the message.
 Message Type - The type relevant to the message.
