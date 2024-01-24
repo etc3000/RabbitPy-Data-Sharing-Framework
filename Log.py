@@ -2,17 +2,32 @@ import logging
 import os
 from datetime import datetime
 
+
 class Log:
+    """
+    A utility class for logging messages. This class should not be instantiated.
+    """
     LOG_CLASS = Log.__name__
 
+    # Set up the basic configuration for the logger
     logging.basicConfig(level=logging.NOTSET)
     logger = logging.getLogger(LOG_CLASS)
 
     def __init__(self):
+        """
+        Raises an error if an attempt is made to instantiate the Log class.
+        """
         raise ValueError("Log class should not be instantiated.")
 
     @staticmethod
     def set_output(output_type, log_level):
+        """
+        Sets the output type and log level for the logger.
+
+        Args:
+            output_type (str): The type of output (e.g., "file" or "console").
+            log_level (str): The level of logging (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").
+        """
         log_level = log_level.upper()
         output_type = output_type.lower()
         level = getattr(logging, log_level, logging.NOTSET)
@@ -21,6 +36,13 @@ class Log:
 
     @staticmethod
     def set_output_helper(output_type, log_level):
+        """
+        Helper method to set the output type and log level for the logger.
+
+        Args:
+            output_type (str): The type of output (e.g., "file" or "console").
+            log_level (str): The level of logging (e.g., "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL").
+        """
         handler = None
         if output_type == "file":
             try:
@@ -37,26 +59,65 @@ class Log:
 
     @staticmethod
     def other(message):
+        """
+        Logs an informational message.
+
+        Args:
+            message (str): The message to log.
+        """
         Log.logger.info(message)
 
     @staticmethod
     def error(message, method_name):
+        """
+        Logs a warning message.
+
+        Args:
+            message (str): The message to log.
+            method_name (str): The name of the method where the error occurred.
+        """
         Log.logger.warning(f"{Log.LOG_CLASS}.{method_name} - {message}")
 
     @staticmethod
     def debug(message, class_name, command):
+        """
+        Logs a debug message.
+
+        Args:
+            message (str): The message to log.
+            class_name (str): The name of the class where the debug message is being logged.
+            command (str): The command or method where the debug message is being logged.
+        """
         Log.logger.debug(f"{class_name}.{command} - {message}")
 
     @staticmethod
     def sent(message):
+        """
+        Logs a message indicating that something was sent.
+
+        Args:
+            message (str): The message to log.
+        """
         Log.logger.info(f"{Log.LOG_CLASS}.SENT - {message}")
 
     @staticmethod
     def received(message):
+        """
+        Logs a message indicating that something was received.
+
+        Args:
+            message (str): The message to log.
+        """
         Log.logger.info(f"{Log.LOG_CLASS}.RECEIVED - {message}")
 
     @staticmethod
     def get_log_file_name():
+        """
+        Generates a log file name based on the current date and time.
+
+        Returns:
+            str: The generated log file name.
+        """
         cwd = os.getcwd()
         log_dir = os.path.join(cwd, "output-logs")
 

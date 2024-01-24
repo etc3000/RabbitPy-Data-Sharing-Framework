@@ -1,32 +1,40 @@
 class Constants:
+    """
+    This class contains constant values that are used throughout the application.
+    It should not be instantiated.
+    """
+
     # Message Types
-    ANNOUNCE_MESSAGE = "announce_data"
-    CAN_TRANSLATE = "can_translate"
-    REQUEST_DATA = "request_data"
-    SENT_DATA = "sent_data"
+    ANNOUNCE_MESSAGE = "announce_data"  # Message type for announcing data
+    CAN_TRANSLATE = "can_translate"  # Message type for indicating translation capability
+    REQUEST_DATA = "request_data"  # Message type for requesting data
+    SENT_DATA = "sent_data"  # Message type for indicating sent data
 
     # Metadata Keys
-    METADATA = "metadata"
-    USER_ID = "user_id"
-    MESSAGE_ID = "message_id"
-    MESSAGE_TYPE = "message_type"
-    METADATA_FILEDATA = "data"
-    DATA_CONVERT_FORMATS = "data_convert_formats"
-    DATA_REQUEST_FORMATS = "data_request_formats"
-    ORIGIN_MESSAGE_ID = "origin_message_id"
-    SOURCE_USER_ID = "source_user_id"
-    TIMESTAMP = "time_stamp"
-    ORIGINAL_FORMAT = "original_format"
-    DESTINATION_FORMATS = "destination_formats"
-    FILENAME = "filename"
-    FILESIZE = "filesize"
-
-    CONTENT = "content"
+    METADATA = "metadata"  # Key for metadata
+    USER_ID = "user_id"  # Key for user ID
+    MESSAGE_ID = "message_id"  # Key for message ID
+    MESSAGE_TYPE = "message_type"  # Key for message type
+    METADATA_FILEDATA = "data"  # Key for file data within metadata
+    DATA_CONVERT_FORMATS = "data_convert_formats"  # Key for data conversion formats
+    DATA_REQUEST_FORMATS = "data_request_formats"  # Key for data request formats
+    ORIGIN_MESSAGE_ID = "origin_message_id"  # Key for original message ID
+    SOURCE_USER_ID = "source_user_id"  # Key for source user ID
+    TIMESTAMP = "time_stamp"  # Key for timestamp
+    ORIGINAL_FORMAT = "original_format"  # Key for original format
+    DESTINATION_FORMATS = "destination_formats"  # Key for destination formats
+    FILENAME = "filename"  # Key for filename
+    FILESIZE = "filesize"  # Key for filesize
+    CONTENT = "content"  # Key for content
 
     # RabbitMQ Guest User Information
     # TODO: find more secure way of storing variables for distribution
     # RABBITMQ_URI = "amqps://xowvnltv:hwYeKNw5yGW6mg_7NoUx-QS7lDzGNael@woodpecker.rmq.cloudamqp.com/xowvnltv"
     RABBITMQ_URI = "amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb"
+    # URI for connecting to the RabbitMQ server
 
     def __init__(self):
-        pass
+        """
+        Raises an error if an attempt is made to instantiate the Constants class.
+        """
+        raise ValueError("Constants class should not be instantiated.")

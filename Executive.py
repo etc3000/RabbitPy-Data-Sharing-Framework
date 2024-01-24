@@ -8,7 +8,15 @@ from rabbitmq import RabbitMQConnection  # Assuming you have a RabbitMQConnectio
 from logging import Log  # Assuming you have a Log class defined
 
 class Executive:
+    """
+    The Executive class is responsible for executing commands in a separate thread.
+    It also handles the communication with the RabbitMQ server.
+    """
+
     def __init__(self):
+        """
+        Initializes the Executive class.
+        """
         self.done = False
         self.process = None
         self.running = None
@@ -35,35 +43,89 @@ class Executive:
         self.request_message = None
 
     def set_cwd(self, cwd):
+        """
+        Sets the current working directory.
+
+        Args:
+            cwd (str): The path to the current working directory.
+        """
         self._cwd = cwd
 
     def set_connection(self, connection):
+        """
+        Sets the RabbitMQ connection.
+
+        Args:
+            connection (RabbitMQConnection): The RabbitMQ connection.
+        """
         self.connection = connection
 
     def set_user_id(self, user_id):
+        """
+        Sets the user ID.
+
+        Args:
+            user_id (str): The user ID.
+        """
         self.user_id = user_id
 
     def set_filepath(self, filepath):
+        """
+        Sets the file path.
+
+        Args:
+            filepath (str): The file path.
+        """
         self.filepath = filepath
 
     def set_required_message_content(self, message):
+        """
+        Sets the required message content.
+
+        Args:
+            message (Message): The message.
+        """
         self.origin_message_id = message.get_origin_message_id()
         self.request_user_id = message.get_sender_id()
 
     def set_request_message(self, message):
+        """
+        Sets the request message.
+
+        Args:
+            message (Message): The request message.
+        """
         self.request_message = message
 
     @staticmethod
     def is_mac():
+        """
+        Checks if the operating system is Mac.
+
+        Returns:
+            bool: True if the operating system is Mac, False otherwise.
+        """
         os_name = os.uname().sysname
         return os_name.lower().startswith("darwin")
 
     def is_m1(self):
+        """
+        Checks if the Mac is an M1 Mac.
+
+        Returns:
+            bool: True if the Mac is an M1 Mac, False otherwise.
+        """
         brew_bin = Path(self.homebrew_bin)
         brew_sbin = Path(self.homebrew_sbin)
         return brew_bin.exists() and brew_bin.is_dir() and brew_sbin.exists() and brew_sbin.is_dir()
 
     def send_message(self, command):
+        """
+        Sends a message to the RabbitMQ server.
+
+        Args:
+            command (str): The command to send.
+        """
         send_data = Message(self.user_id, "sent_data")
         send_data.add_file_path(self.filepath)
         send_data.add_origin_message_id(self.origin_message_id)
@@ -72,10 +134,22 @@ class Executive:
         self.connection.direct(send_data, self.request_user_id)
 
     def request_data_again(self):
+        """
+        Requests the data again from the RabbitMQ server.
+        """
         origin_sender_id = self.request_message.get_source_user_id()
         self.connection.direct(self.request_message, origin_sender_id)
 
     def temp_file_script(self, command):
+        """
+        Creates a temporary file script.
+
+        Args:
+            command (str): The command to write to the script.
+
+        Returns:
+            file: The temporary file.
+        """
         file = None
         try:
             file = tempfile.NamedTemporaryFile(prefix="bCNU", delete=False)
@@ -101,6 +175,12 @@ class Executive:
         return file
 
     def execute(self, command):
+        """
+        Executes a command in a separate thread.
+
+        Args:
+            command (str): The command to execute.
+        """
         file = self.temp_file_script(command)
         if file is None:
             return
@@ -170,10 +250,26 @@ class Executive:
             Log.error(str(e), __class__.__name__, command)
 
     def get_running_thread(self):
+        """
+        Gets the running thread.
+
+        Returns:
+            threading.Thread: The running thread.
+        """
         return self.running
 
     @staticmethod
     def execute_static(command, dir=None):
+        """
+        Executes a command in a separate thread.
+
+        Args:
+            command (str): The command to execute.
+            dir (str, optional): The directory to execute the command in. Defaults to None.
+
+        Returns:
+            threading.Thread: The running thread.
+        """
         executive = Executive()
 
         if dir and dir.exists() and dir.is_dir():
@@ -184,6 +280,18 @@ class Executive:
 
     @staticmethod
     def execute_static_with_connection(command, dir, connection, request_message):
+        """
+        Executes a command in a separate thread with a connection to the RabbitMQ server.
+
+        Args:
+            command (str): The command to execute.
+            dir (str): The directory to execute the command in.
+            connection (RabbitMQConnection): The RabbitMQ connection.
+            request_message (Message): The request message.
+
+        Returns:
+            threading.Thread: The running thread.
+        """
         executive = Executive()
 
         if dir and dir.exists() and dir.is_dir():
@@ -196,6 +304,17 @@ class Executive:
 
     @staticmethod
     def execute_static_with_params(command, dir, connection, user_id, message, filepath):
+        """
+        Executes a command in a separate thread with parameters.
+
+        Args:
+            command (str): The command to execute.
+            dir (str): The directory to execute the command in.
+            connection (RabbitMQConnection): The RabbitMQ connection.
+            user_id (str): The user ID.
+            message (Message): The message.
+            filepath (str): The file path.
+        """
         executive = Executive()
         if dir and dir.exists() and dir.is_dir():
             executive.set_cwd(dir)

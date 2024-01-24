@@ -8,8 +8,24 @@ from constants import Constants
 from logging import Log
 
 class ProcessMessage:
+    """
+    The ProcessMessage class is responsible for processing messages received from the RabbitMQ server.
+
+    Attributes:
+        user (User): The user who is processing the message.
+        connection (RabbitMQConnection): The connection to the RabbitMQ server.
+        message (str): The message to be processed.
+    """
 
     def __init__(self, user: User, connection: RabbitMQConnection, message: str) -> None:
+        """
+        Initializes the ProcessMessage class with the user, connection, and message.
+
+        Args:
+            user (User): The user who is processing the message.
+            connection (RabbitMQConnection): The connection to the RabbitMQ server.
+            message (str): The message to be processed.
+        """
         self.user = user
         root = json.loads(message)
         metadata = root[Constants.METADATA]
@@ -17,7 +33,6 @@ class ProcessMessage:
         # Ignore messages current user sent
         if metadata[Constants.USER_ID] != user.get_user_id():
             self.message = Message(message)
-
             self.sender_id = self.message.get_sender_id()
             self.message_type = self.message.get_message_type()
             self.message_id = self.message.get_message_id()
@@ -29,6 +44,12 @@ class ProcessMessage:
             self.connection = connection
 
     def process(self) -> Union[Wormhole.ReceiveObj, None]:
+        """
+        Processes the message.
+
+        Returns:
+            Union[Wormhole.ReceiveObj, None]: The received object if the message type is "sent_data", None otherwise.
+        """
         if self.message is not None:
             Log.received(f" [x] Received {self.message}")
             self.user.add_received_message(self.message_id, self.message)
@@ -51,24 +72,42 @@ class ProcessMessage:
         return None
 
     def has_requested_data(self, filepath: str) -> None:
+        """
+        Checks if the user has requested data and sends it if they have.
+
+        Args:
+            filepath (str): The path to the file.
+        """
         if self.message_type == Constants.REQUEST_DATA:
             Wormhole.send(self.connection, self.user_id, self.message, filepath)
         elif self.message_type == Constants.CAN_TRANSLATE:
             self.want_converted_data()
 
     def wants_and_does_not_have_data(self) -> None:
+        """
+        Checks if the user wants data and does not have it, and requests it if they do.
+        """
         if self.message_type == Constants.ANNOUNCE_MESSAGE:
             self.want_data(False)
         elif self.message_type == Constants.CAN_TRANSLATE:
             self.want_converted_data()
 
     def can_convert_data(self) -> None:
+        """
+        Checks if the user can convert data and requests it if they can.
+        """
         if self.message_type == Constants.ANNOUNCE_MESSAGE:
             self.convert_data_announcement()
         elif self.message_type == Constants.REQUEST_DATA:
             self.want_data(True)
 
     def want_data(self, for_convert: bool) -> None:
+        """
+        Checks if the user wants data and requests it if they do.
+
+        Args:
+            for_convert (bool): True if the user wants to convert the data, False otherwise.
+        """
         request_want_formats = self.want_formats
         data = self.message.get_file_data()
         request_message_id = self.message_id
@@ -99,6 +138,12 @@ class ProcessMessage:
                 break
 
     def get_want_args(self) -> Union[Tuple[List[str], List[FileData], str, str], Tuple[None, None, None, None]]:
+        """
+        Gets the arguments for the want request.
+
+        Returns:
+            Union[Tuple[List[str], List[FileData], str, str], Tuple[None, None, None, None]]: The arguments for the want request if they exist, None otherwise.
+        """
         request_formats = self.message.get_request_formats()
         new_wanted_formats = []
 
@@ -116,6 +161,9 @@ class ProcessMessage:
         return new_wanted_formats, origin_message.get_file_data(), origin_message_id, origin_message.get_sender_id()
 
     def convert_data_announcement(self) -> None:
+        """
+        Announces that the user can convert data.
+        """
         announced_data = self.message.get_file_data()
         request_data = []
         convertable_formats = {}
@@ -141,6 +189,9 @@ class ProcessMessage:
         self.connection.announce(request_message)
 
     def want_converted_data(self) -> None:
+        """
+        Checks if the user wants converted data and requests it if they do.
+        """
         announced_convertable_formats = self.message.get_convert_formats()
         found_format = False
         request_format = None
@@ -170,6 +221,12 @@ class ProcessMessage:
                 self.user.add_translation_request(filename, request_format)
 
     def get_filepath(self) -> Union[str, None]:
+        """
+        Gets the file path.
+
+        Returns:
+            Union[str, None]: The file path if it exists, None otherwise.
+        """
         for path in self.filepaths:
             filename = os.path.basename(path)
             for file_data in self.message.get_file_data():
