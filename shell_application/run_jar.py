@@ -1,10 +1,6 @@
-import tkinter as tk
-from tkinter import Text, filedialog, messagebox
-import pika
-import hashlib
 import subprocess
 
-from PythonShell import rmq_connect, result_label
+from shell_application.PythonShell import rmq_connect, result_label
 
 
 def jar_func():

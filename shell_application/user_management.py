@@ -1,9 +1,7 @@
-import tkinter as tk
-from tkinter import Text, filedialog, messagebox, simpledialog
-import pika
+from tkinter import simpledialog
 import hashlib
 
-import user_list
+from shell_application import user_list
 
 
 def user_register():

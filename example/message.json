@@ -1,0 +1,40 @@
+{
+	"metadata": {
+		"user_id": "0b1a9d59-8aca-4979-8884-e7e55a9f5b8c",
+		"message_type": "announce_data",
+		"message_id": "1620ddcf-1704-429e-8032-b18c7ac415fe",
+		"data": [
+			{
+				"filename": "test-data.csv",
+				"filesize": 10
+			},
+			{
+				"filename": "test-scatter-data.csv",
+				"filesize": 6832
+			}
+		],
+		"data_convert_formats": [
+			{
+				"original_format": "csv",
+				"destination_formats": [
+					"json",
+					"pdf"
+				]
+			},
+			{
+				"original_format": "json",
+				"destination_formats": [
+					"csv"
+				]
+			}
+		],
+		"data_request_formats": [
+			"csv",
+			"json"
+		],
+		"origin_message_id": "a9ce7936-a7f1-4b0b-86b0-7905050a0ee2",
+		"source_user_id": "47101c5c-7f79-4c02-9816-e07c982346c5",
+		"time_stamp": "2022-10-20T18:29:47Z"
+	},
+	"content": "ExampleJSONofmessage."
+}
