@@ -2,7 +2,7 @@ import os
 import threading
 from pathlib import Path
 
-from rabbitmq import RabbitMQConnection  # Assuming you have a RabbitMQConnection class in a rabbitmq module
+from rabbitmq.RabbitMQConnection import RabbitMQConnection  # Assuming you have a RabbitMQConnection class in a rabbitmq module
 from user import User  # Assuming you have a User class in a user module
 from message import Message, ProcessMessage, Wormhole  # Assuming you have these classes in a message module
 from logging import Log  # Assuming you have a Log class in a logging module
