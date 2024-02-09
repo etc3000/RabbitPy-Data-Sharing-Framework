@@ -2,7 +2,7 @@ from pathlib import Path
 from uuid import uuid4
 from typing import List, Dict
 
-from message import Message
+from ..message import Message
 
 class User:
     """

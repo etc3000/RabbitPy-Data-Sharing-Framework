@@ -1,9 +1,10 @@
 import pika
 import logging
-from api import ResearchAPI
-from constants import Constants
-from message import Message
-from user import User
+from ..api import ResearchAPI
+from ..constants import Constants
+from ..message import Message
+from ..user import User
+
 
 class RabbitMQConnection:
     """
@@ -60,8 +61,10 @@ class RabbitMQConnection:
             result = self.channel.queue_declare(queue="", exclusive=True)
             self.queue_name = result.method.queue
 
-            self.channel.queue_bind(exchange=self.EXCHANGE_NAME, queue=self.queue_name, routing_key=self.ANNOUNCE_ROUTING_KEY)
-            self.channel.queue_bind(exchange=self.EXCHANGE_NAME, queue=self.queue_name, routing_key=self.user.get_user_id())
+            self.channel.queue_bind(exchange=self.EXCHANGE_NAME, queue=self.queue_name,
+                                    routing_key=self.ANNOUNCE_ROUTING_KEY)
+            self.channel.queue_bind(exchange=self.EXCHANGE_NAME, queue=self.queue_name,
+                                    routing_key=self.user.get_user_id())
         except Exception as e:
             logging.error("Failed establishing connection and queues to RabbitMQ server, please double-check input URI",
                           self.RESEARCH_API_CONNECT)

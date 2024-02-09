@@ -1,7 +1,9 @@
 import json
+import uuid
 from datetime import datetime
-from file_data import FileData  # Assuming you have a FileData class in a separate file
+from FileData import *  # Assuming you have a FileData class in a separate file
 from pathlib import Path
+
 
 class Metadata:
     """
@@ -149,7 +151,8 @@ class Metadata:
         """
         metadata = cls(metadata_json_obj['user_id'], metadata_json_obj['message_type'])
         metadata.message_id = metadata_json_obj['message_id']
-        metadata.data = [FileData(file['filename'], file['filesize']) for file in metadata_json_obj['metadata_filedata']]
+        metadata.data = [FileData(file['filename'], file['filesize']) for file in
+                         metadata_json_obj['metadata_filedata']]
         metadata.data_request_formats = metadata_json_obj['data_request_formats']
         metadata.data_convert_formats = {entry['original_format']: entry['destination_formats'] for entry in
                                          metadata_json_obj['data_convert_formats']}

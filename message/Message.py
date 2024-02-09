@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
-from metadata import Metadata  # Assuming you have a Metadata class in a separate file
+from Metadata import *  # Assuming you have a Metadata class in a separate file
+
 
 class Message:
     """

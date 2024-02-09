@@ -1,16 +1,18 @@
 import os
 import threading
-from pathlib import Path
 
-from rabbitmq.RabbitMQConnection import RabbitMQConnection  # Assuming you have a RabbitMQConnection class in a rabbitmq module
-from user import User  # Assuming you have a User class in a user module
-from message import Message, ProcessMessage, Wormhole  # Assuming you have these classes in a message module
-from logging import Log  # Assuming you have a Log class in a logging module
+from pathlib import Path
+from ..rabbitmq import RabbitMQConnection  # Assuming you have a RabbitMQConnection class in a rabbitmq module
+from ..user import User  # Assuming you have a User class in a user module
+from ..message import Message, ProcessMessage, MagicWormhole  # Assuming you have these classes in a message module
+from ..logging import Log  # Assuming you have a Log class in a logging module
+
 
 class ResearchAPI:
     """
     The main class for the Research API. It handles user interactions, file management, and messaging.
     """
+
     def __init__(self, log_type, log_level):
         """
         Initialize the ResearchAPI instance.
@@ -102,6 +104,7 @@ class MessageThread(threading.Thread):
     """
     A thread for processing messages from the RabbitMQ server.
     """
+
     def __init__(self, research_api):
         """
         Initialize the MessageThread instance.

@@ -2,7 +2,7 @@ import os
 import subprocess
 from threading import Thread
 from typing import List
-from message import Message
+from ..message import Message
 
 
 class Wormhole:

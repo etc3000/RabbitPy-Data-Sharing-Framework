@@ -1,11 +1,12 @@
 import os
 import json
 from typing import List, Dict, Union, Tuple
-from message import Wormhole, Message, FileData
-from rabbitmq import RabbitMQConnection
-from user import User
-from constants import Constants
-from logging import Log
+from ..message import MagicWormhole, Message, FileData
+from ..rabbitmq import RabbitMQConnection
+from ..user import User
+from ..constants import Constants
+from ..logging import Log
+
 
 class ProcessMessage:
     """
@@ -67,7 +68,8 @@ class ProcessMessage:
 
             if self.message_type == Constants.SENT_DATA:
                 filename = self.message.get_file_data()[0].get_file_name()
-                return Wormhole.receive(self.connection, self.user.get_request_message(), self.message.get_content(), filename, self.sender_id)
+                return Wormhole.receive(self.connection, self.user.get_request_message(), self.message.get_content(),
+                                        filename, self.sender_id)
 
         return None
 
@@ -123,7 +125,8 @@ class ProcessMessage:
             filename = file_data.get_file_name()
             file_format = filename.split(".")[1]
 
-            already_requested = filename in self.user.get_files_requested(origin_sender_id) if self.user.get_files_requested(origin_sender_id) is not None else False
+            already_requested = filename in self.user.get_files_requested(
+                origin_sender_id) if self.user.get_files_requested(origin_sender_id) is not None else False
 
             if file_format in request_want_formats and not already_requested:
                 request_message = Message(self.user_id, Constants.REQUEST_DATA)
@@ -207,7 +210,8 @@ class ProcessMessage:
 
         if self.message.get_file_data():
             filename = self.message.get_file_data()[0].get_file_name()
-            already_requested = filename in self.user.get_translation_format_requests(filename) if self.user.get_translation_format_requests(filename) is not None else False
+            already_requested = filename in self.user.get_translation_format_requests(
+                filename) if self.user.get_translation_format_requests(filename) is not None else False
 
             if request_format and not already_requested:
                 request_message = Message(self.user_id, Constants.REQUEST_DATA)

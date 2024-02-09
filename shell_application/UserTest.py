@@ -1,7 +1,10 @@
 import unittest
 from pathlib import Path
-from message import Message
-from user import User
+
+from ..api import ResearchAPI
+from ..message import Message
+from ..user import User
+
 
 class UserTest(unittest.TestCase):
     """
@@ -75,6 +78,7 @@ class UserTest(unittest.TestCase):
 
         self.assertIsNone(self.user.get_files_requested("sourceUser1"))
 
+
 class TestUser:
     """
     The TestUser class is used to test the functionality of the User class.
@@ -94,7 +98,9 @@ class TestUser:
             received_filepath = received_file[0]
             received_file_format = received_file[1]
             if received_filepath is not None and received_file_format is not None and received_file_format == "csv":
-                # do translation here
+                # TODO: do translation here
+                return
+
 
 if __name__ == "__main__":
     """
