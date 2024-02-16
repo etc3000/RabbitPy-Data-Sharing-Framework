@@ -13,6 +13,8 @@
         <option value="$MODULE_DIR$/user" />
         <option value="$MODULE_DIR$/shell_application" />
         <option value="$MODULE_DIR$/rabbitmq" />
+        <option value="$MODULE_DIR$/api" />
+        <option value="$MODULE_DIR$/message" />
       </list>
     </option>
   </component>

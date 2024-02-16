@@ -8,7 +8,15 @@ from message.MagicWormhole import Wormhole
 from logging.Log import Log
 from shell_application.File_Function import csv_to_pdf
 
+
 def main():
+    """
+    Upon running this script, user signs into RabbitMQ or connects after specifying their username, verify with logged credentials on server
+    User uploads or types out their message, can also choose to convert a file to a different format
+    User can also choose to listen for messages, receive a file, send a file, or convert a file
+    User can specify intended recipient/channel of message or file
+    :return:
+    """
     parser = argparse.ArgumentParser(description='Interact with the Research API.')
     parser.add_argument('--connect', action='store_true', help='Connect to the RabbitMQ server.')
     parser.add_argument('--user', type=str, help='Specify the user ID.')
@@ -90,6 +98,7 @@ def main():
         Wormhole.receive(api.connection, Message(args.user, "Receiving file"), command, filename, args.user)
 
     # Add more operations as necessary...
+
 
 if __name__ == '__main__':
     main()

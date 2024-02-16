@@ -3,7 +3,7 @@ This file handles file conversion between the pdf, csv, and JSON formats utilizi
 """
 import pandas as pd
 import matplotlib.pyplot as plt
-from pdfminer.high_level import extract_text
+from pdfminer.six import extract_text
 
 
 # 1. CSV to PDF
