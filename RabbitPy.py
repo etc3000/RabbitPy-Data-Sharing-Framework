@@ -1,5 +1,5 @@
 import argparse
-from api.ResearchAPI import ResearchAPI
+from api import ResearchAPI
 from user.User import User
 from rabbitmq.RabbitMQConnection import RabbitMQConnection
 from message.Message import Message
@@ -7,6 +7,7 @@ from message.ProcessMessage import ProcessMessage
 from message.MagicWormhole import Wormhole
 from logging.Log import Log
 from shell_application.File_Function import csv_to_pdf
+from constants import Constants
 
 
 def main():
@@ -34,12 +35,20 @@ def main():
     # Add more arguments as necessary...
 
     args = parser.parse_args()
-
+    # PART 1: Connecting to the RabbitMQ server
     if args.connect:
         # Create a ResearchAPI instance and connect to the server
         api = ResearchAPI(Log.TYPE, Log.LEVEL)
-        api.connect()
+        api.connect(Constants.RABBITMQ_URI)
+        #     RABBITMQ_URI = "amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb"
+        if api.connection is not None:
+            print("Successfully connected to the RabbitMQ server.")
+            message = Message(args.user, "Successfully connected to the RabbitMQ server.")
+            api.connection.announce(message)
+        else:
+            print("Failed to connect to the RabbitMQ server.")
 
+    # PART 2: Operations user can do once inside RabbitMQ server
     if args.user:
         # Create a User instance with the specified ID
         user = User(args.user)
@@ -98,7 +107,23 @@ def main():
         Wormhole.receive(api.connection, Message(args.user, "Receiving file"), command, filename, args.user)
 
     # Add more operations as necessary...
-
+    # args = parser.parse_args()
+    #
+    # if args.register:
+    #     user_id, password = args.register
+    #     api.register(user_id, password)
+    #
+    # if args.login:
+    #     user_id, password = args.login
+    #     api.login(user_id, password)
+    #
+    # if args.publish:
+    #     message_text, channel_or_queue = args.publish
+    #     api.publish(message_text, channel_or_queue)
+    #
+    # if args.add_format:
+    #     original_format, destination_format = args.add_format
+    #     api.add_format(original_format, destination_format)
 
 if __name__ == '__main__':
     main()

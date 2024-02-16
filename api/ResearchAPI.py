@@ -196,7 +196,7 @@ class ResearchAPI:
     def add_convert_format(self, original_format, destination_format):
         self.user.add_convert(original_format, destination_format)
 
-    def connect(self, uri=""):
+    def connect(self, uri=Constants.RABBITMQ_URI):
         self.connection = RabbitMQConnection(self.user, uri)
 
     def start_listening(self):
