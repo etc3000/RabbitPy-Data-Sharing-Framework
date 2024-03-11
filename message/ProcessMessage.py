@@ -2,10 +2,10 @@
 # import json
 # from typing import List, Dict, Union, Tuple
 # from ..message import MagicWormhole, Message, FileData
-# from ..rabbitmq import RabbitMQConnection
+# from ..rmq import RabbitMQConnection
 # from ..user import User
 # from ..constants import Constants
-# from ..logging import Log
+# from ..my_logging import Log
 #
 #
 # class ProcessMessage:
@@ -245,10 +245,10 @@ from typing import List, Dict, Union, Tuple
 
 from .MagicWormhole import Wormhole
 from ..message import MagicWormhole, Message, FileData
-from ..rabbitmq import RabbitMQConnection
+from ..rmq import RabbitMQConnection
 from ..user import User
 from ..constants import Constants
-from ..logging import Log
+from ..my_logging import Log
 
 
 class ProcessMessage:

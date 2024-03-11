@@ -1,7 +1,7 @@
 import json
 import uuid
 from datetime import datetime
-from FileData import *  # Assuming you have a FileData class in a separate file
+from message import FileData  # Assuming you have a FileData class in a separate file
 from pathlib import Path
 
 

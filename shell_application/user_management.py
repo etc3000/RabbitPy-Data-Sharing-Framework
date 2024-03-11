@@ -19,3 +19,5 @@ def user_register():
 
 # forgot password
 # verify user exists, then allow to reset, update in user_list.py
+# redo for command line version, allow user to register with user name and password
+# want to connect with regular password, not the hashed one stored in user_list

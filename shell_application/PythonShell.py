@@ -168,7 +168,7 @@ root = tk.Tk()
 root.title("RabbitMQ Messenger")
 root.geometry("600x600")
 
-rmq_img = tk.PhotoImage(file="/rabbitmq_logo-1105942957.png")
+rmq_img = tk.PhotoImage(file="rabbitmq_logo-1105942957.png")
 
 # Create and configure widgets
 rmq_img_label = tk.Label(root, image=rmq_img)

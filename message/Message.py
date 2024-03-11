@@ -1,7 +1,6 @@
 import json
 from pathlib import Path
-from Metadata import *  # Assuming you have a Metadata class in a separate file
-# import InvalidPathException, IOException
+from message import Metadata  # Assuming you have a Metadata class in a separate file
 
 
 class Message:
@@ -34,7 +33,7 @@ class Message:
         try:
             valid_path = Path(file_path)
             self.metadata.set_data(valid_path)
-        except (InvalidPathException, IOException) as e:
+        except (FileNotFoundError, IsADirectoryError, IOError) as e:
             print(e)
 
     def request_file(self, file_data):
