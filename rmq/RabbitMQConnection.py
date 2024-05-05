@@ -34,9 +34,9 @@
 #         return self.queue_name
 
 import pika
-from ..constants import Constants
-from ..message import Message
-from ..user import User
+from constants import Constants
+from message import Message
+from user import User
 
 
 class RabbitMQConnection:
@@ -63,7 +63,7 @@ class RabbitMQConnection:
     def direct(self, message: Message, user_id: str) -> None:
         self.channel.basic_publish(exchange=self.EXCHANGE_NAME, routing_key=user_id, body=message.to_json())
 
-    def get_channel(self) -> pika.Channel:
+    def get_channel(self) -> pika.channel:
         return self.channel
 
     def get_queue_name(self) -> str:

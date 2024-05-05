@@ -1,5 +1,8 @@
 import argparse
-from user import User
+
+from message.MagicWormhole import Wormhole
+from message.Message import Message
+from user.User import User
 from message import *
 from my_logging.Log import Log
 import shell_application.File_Function as ff
@@ -17,30 +20,30 @@ def handle_user_registration(args):
     user = User(user_id)
     user_credentials[user_id] = password
     print(f"User {user_id} registered successfully.")
+
+    # Registered user added to user_list.py
+    with open("user_list.py", "w") as user_base:
+        user_base.write(f"user_credentials = {user_credentials}")
+
     return user
 
 
 def handle_user_login(args):
+    global rmq_connection
     user_id, password = args.login
     if user_id in user_credentials and password == user_credentials[user_id]:
         print(f"User {user_id} logged in successfully.")
+        url = 'amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb'
+        try:
+            rmq_connection = pika.BlockingConnection(pika.URLParameters(url))
+            print("Successfully connected to the RabbitMQ server.")
+        except pika.exceptions.AMQPConnectionError:
+            print("Failed to connect to the RabbitMQ server.")
+            return None
         return user_id
     else:
         print("Invalid username or password.")
         return None
-
-    # user_id, password = args.login
-    # if user_id in user_credentials and password == user_credentials[user_id]:
-    #     print(f"User {user_id} logged in successfully.")
-    #     channel = connection.channel()
-    #     channel.queue_declare(queue='test_queue')
-    #     channel.basic_publish(exchange='', routing_key='test_queue', body=f'User {user_id} has connected.')
-    #     print(f"User {user_id} connected to the RabbitMQ server.")
-    #     channel.basic_publish(exchange='', routing_key='test_queue', body=f'User {user_id} has logged in.')
-    #     print(f"Published message: 'User {user_id} has logged in.'")
-    # else:
-    #     print("Invalid username or password.")
-    #     return
 
 
 def handle_file_conversion(args):
@@ -68,34 +71,102 @@ def handle_file_conversion(args):
         return
 
 
-def handle_add_want_format(args, user):
-    if args.add_want_format:
-        user.add_want_format(args.add_want_format)
+def handle_add_want_format(username, format):
+    user = User(username)  # Assuming User class has been imported and user exists
+    user.add_want_format(format)
+    print(f"Format {format} has been added for user {username}.")
 
 
-def handle_add_convert_format(args, user):
-    if args.add_convert_format:
-        original_format, destination_formats = args.add_convert_format.split(',')
-        destination_formats = destination_formats.split()
-        user.add_convert_format(original_format, destination_formats)
+def handle_add_convert_format(username, source_format, target_format):
+    user = User(username)  # Assuming User class has been imported and user exists
+    user.convert[source_format] = target_format.split()
+    print(f"Conversion format {source_format}:{target_format} has been added for user {username}.")
+
+
+def handle_upload(args):
+    if args.upload:
+        file_path = args.upload[0]
+        # Assuming a function to upload files exists
+        upload_file(file_path)
+
+
+def handle_download(args):
+    if args.download:
+        file_path = args.download[0]
+        # Assuming a function to download files exists
+        download_file(file_path)
+
+
+def handle_receive_file(args):
+    if args.receive_file:
+        command, filename = args.receive_file
+        Wormhole.receive(rmq_connection, Message(args.user, "Receiving file"), command, filename, args.user)
+
+
+def handle_send_message(args, rmq_connection):
+    if args.send_message:
+        message_text, user_id = args.send_message
+        message = Message(args.user, message_text)
+        rmq_connection.direct(message, user_id)
+
+
+def handle_magic_wormhole(args):
+    if args.magicwormhole:
+        file_path, user_id = args.magicwormhole
+        Wormhole.send(rmq_connection, user_id, Message(user_id, "Sending file"), file_path)
+
+
+def handle_close_connection(args):
+    global rmq_connection
+    if args.close_connection and rmq_connection:
+        rmq_connection.close()
+        rmq_connection = None
+        print("Connection to the RabbitMQ server has been closed.")
 
 
 # TODO: Reformat code below into new functions above, better readability and modularity
+def upload_file(channel, routing_key, file_path):
+    with open(file_path, 'rb') as file:
+        file_data = file.read()
+    channel.basic_publish(
+        exchange='',
+        routing_key=routing_key,
+        body=file_data,
+        properties=pika.BasicProperties(
+            content_type='application/octet-stream',
+            delivery_mode=2
+        )
+    )
+
+
+def download_file(channel, queue_name, file_path):
+    method_frame, properties, body = channel.basic_get(queue_name)
+    if method_frame:
+        with open(file_path, 'wb') as file:
+            file.write(body)
+        channel.basic_ack(method_frame.delivery_tag)
+
 
 def main():
+    global rmq_connection
     parser = argparse.ArgumentParser(description='Interact with the Research API.')
     parser.add_argument('--register', nargs=2, help='Register a new user.')
     parser.add_argument('--login', nargs=2, help='Login as an existing user.')
-    # parser.add_argument('--connect', action='store_true', help='Connect to the RabbitMQ server.')
+    # parser.add_argument('--add-want-format', type=str, help='Add a file format the user wants.')
+    parser.add_argument('--add-want-format', nargs=2, metavar=('username', 'format'),
+                        help='Add a file format the user wants.')
 
-    # New arguments...
-    parser.add_argument('--add-want-format', type=str, help='Add a file format the user wants.')
-    parser.add_argument('--add-convert-format', type=str, help='Add a file format the user can convert to.')
+    # parser.add_argument('--add-convert-format', type=str, help='Add a file format the user can convert to.')
+    parser.add_argument('--add-convert-format', nargs=3, metavar=('username', 'source_format', 'target_format'),
+                        help='Add a file format the user can convert to.')
+
     parser.add_argument('--receive_messages', action='store_true', help='Receive any messages from the user\'s queue.')
     parser.add_argument('--send_message', nargs=2, help='Send a message to another user.')
     parser.add_argument('--convert', nargs=3, help='Convert a file from one format to another.')
     parser.add_argument('--upload', nargs=1, help='Upload a file.')
     parser.add_argument('--download', nargs=1, help='Download a file.')
+    parser.add_argument('--magicwormhole', nargs=2, help='Choose file to send to another user')
+    parser.add_argument('--close_connection', action='store_true', help='Close the connection to the RabbitMQ server.')
 
     args = parser.parse_args()
 
@@ -103,25 +174,44 @@ def main():
     if args.register:
         user = handle_user_registration(args)
 
-    # Always attempt to connect to the RabbitMQ server when the script is run
-    url = 'amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb'
-    parsed_url = urlparse(url)
-    hostname = parsed_url.hostname
-
     try:
-        connection = pika.BlockingConnection(pika.URLParameters(url))
-        print("Successfully connected to the RabbitMQ server.")
-    except pika.exceptions.AMQPConnectionError:
-        print("Failed to connect to the RabbitMQ server.")
-        return
+        if args.login:
+            user_id = handle_user_login(args)
+            if user_id is None:
+                return
 
-    if args.login:
-        user_id = handle_user_login(args)
-        if user_id is None:
-            return
+        while True:
+            if args.convert:
+                handle_file_conversion(args)
 
-    if args.convert:
-        handle_file_conversion(args)
+            if args.add_want_format:
+                username, format = args.add_want_format
+                handle_add_want_format(username, format)
+
+            if args.add_convert_format:
+                username, source_format, target_format = args.add_convert_format
+                handle_add_convert_format(username, source_format, target_format)
+
+            if args.upload:
+                handle_upload(args)
+
+            if args.download:
+                handle_download(args)
+
+            if args.receive_messages:
+                handle_receive_file(args)
+
+            if args.send_message:
+                handle_send_message(args, rmq_connection)
+
+            if args.magicwormhole:
+                handle_magic_wormhole(args)
+
+            if args.close_connection:
+                handle_close_connection(args, rmq_connection)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 
 if __name__ == '__main__':
@@ -130,93 +220,6 @@ if __name__ == '__main__':
 # final demo should have multiple clients connecting
 # Can use fake data, one person uploads, one person converts, one person downloads etc.
 
-# TODO: Previous stuff is below here, might be useful
-
-#     parser.add_argument('--message', type=str, help='Specify a message to send.')
-#     parser.add_argument('--add-file', type=str, help='Add a file to the user profile and announce it.')
-#     parser.add_argument('--add-convert-format', nargs=2, help='Add a conversion format to the user profile.')
-#     parser.add_argument('--start-listening', action='store_true', help='Start listening for messages.')
-#     parser.add_argument('--get-received-file', action='store_true', help='Get the received file.')
-#     parser.add_argument('--send-direct', nargs=2, help='Send a direct message to a specific user.')
-#     parser.add_argument('--get-channel', action='store_true', help='Get the channel for the connection.')
-#     parser.add_argument('--get-queue-name', action='store_true', help='Get the name of the queue for the connection.')
-#     parser.add_argument('--convert-file', nargs=2, help='Convert a file from one format to another.')
-#     parser.add_argument('--send-file', type=str, help='Send a file using the Magic Wormhole protocol.')
-#     parser.add_argument('--receive-file', nargs=2, help='Receive a file using the Magic Wormhole protocol.')
-#     # Add more arguments as necessary...
-
-#     if args.user:
-#         # Create a User instance with the specified ID
-#         user = User(args.user)
-#
-#     if args.message:
-#         # Create a Message instance and send it
-#         message = Message(args.user, args.message)
-#         api.connection.announce(message)
-#
-#     if args.add_file:
-#         # Add a file to the user's profile and announce it
-#         api.add_file(args.add_file)
-#
-#     if args.add_convert_format:
-#         # Add a conversion format to the user's profile
-#         original_format, destination_format = args.add_convert_format
-#         api.add_convert_format(original_format, destination_format)
-#
-#     if args.start_listening:
-#         # Start listening for messages
-#         api.start_listening()
-#
-#     if args.get_received_file:
-#         # Get the received file
-#         received_file = api.get_received_file()
-#         print(f'Received file: {received_file}')
-#
-#     if args.send_direct:
-#         # Send a direct message to a specific user
-#         message_text, user_id = args.send_direct
-#         message = Message(args.user, message_text)
-#         api.connection.direct(message, user_id)
-#
-#     if args.get_channel:
-#         # Get the channel for the connection
-#         channel = api.connection.get_channel()
-#         print(f'Channel: {channel}')
-#
-#     if args.get_queue_name:
-#         # Get the name of the queue for the connection
-#         queue_name = api.connection.get_queue_name()
-#         print(f'Queue name: {queue_name}')
-#
-#     if args.convert_file:
-#         # Convert a file from one format to another
-#         source_file, target_file = args.convert_file
-#         csv_to_pdf(source_file, target_file)
-#
-#     if args.send_file:
-#         # Send a file using the Magic Wormhole protocol
-#         Wormhole.send(api.connection, args.user, Message(args.user, "Sending file"), args.send_file)
-#
-#     if args.receive_file:
-#         # Receive a file using the Magic Wormhole protocol
-#         command, filename = args.receive_file
-#         Wormhole.receive(api.connection, Message(args.user, "Receiving file"), command, filename, args.user)
-#
-#     # Add more operations as necessary...
-#     # args = parser.parse_args()
-#     #
-#     # if args.register:
-#     #     user_id, password = args.register
-#     #     api.register(user_id, password)
-#     #
-#     # if args.login:
-#     #     user_id, password = args.login
-#     #     api.login(user_id, password)
-#     #
-#     # if args.publish:
-#     #     message_text, channel_or_queue = args.publish
-#     #     api.publish(message_text, channel_or_queue)
-#     #
-#     # if args.add_format:
-#     #     original_format, destination_format = args.add_format
-#     #     api.add_format(original_format, destination_format)
+# TODO: Modify demo to have a persistent connection.
+# User should only need to log in once and then issue arguments via the parser.
+# Connection should only be closed once the close argument is issued

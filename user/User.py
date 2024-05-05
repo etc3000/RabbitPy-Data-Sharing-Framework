@@ -20,13 +20,30 @@ class User:
     translationsRequested: Dict[str, List[str]] = field(default_factory=dict)
     requestMessage: Message = None
 
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.want_formats = []
+
+    def add_want_format(self, format):
+        self.want_formats.append(format)
+
+    def has_want_format(self, format):
+        return format in self.want_formats
     @property
     def want_formats(self) -> List[str]:
         return self.want
 
+    @want_formats.setter
+    def want_formats(self, value):
+        self.want = value
+
     @property
     def convert_formats(self) -> Dict[str, List[str]]:
         return self.convert
+
+    @convert_formats.setter
+    def convert_formats(self, value):
+        self.convert = value
 
     def get_destination_formats(self, original_format) -> List[str]:
         return self.convert.get(original_format, [])
@@ -45,6 +62,10 @@ class User:
     @property
     def user_id(self) -> str:
         return self.userID
+
+    @user_id.setter
+    def user_id(self, value):
+        self.userID = value
 
     def get_files_requested(self, source_user_id) -> List[str]:
         return self.filesRequested.get(source_user_id, [])
