@@ -2,7 +2,6 @@ import logging
 import os
 from datetime import datetime
 
-
 class Log:
     LOG_CLASS = __name__
     logger = logging.getLogger(LOG_CLASS)

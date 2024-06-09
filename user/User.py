@@ -2,9 +2,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List
 from uuid import uuid4
-
 from message import Message
-
 
 @dataclass
 class User:

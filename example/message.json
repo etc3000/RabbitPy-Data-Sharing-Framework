@@ -7,8 +7,7 @@
 			{
 				"filename": "test-data.csv",
 				"filesize": 10
-			},
-			{
+			}, {
 				"filename": "test-scatter-data.csv",
 				"filesize": 6832
 			}
@@ -20,8 +19,7 @@
 					"json",
 					"pdf"
 				]
-			},
-			{
+			}, {
 				"original_format": "json",
 				"destination_formats": [
 					"csv"

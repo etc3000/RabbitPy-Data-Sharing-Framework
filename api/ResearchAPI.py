@@ -1,6 +1,5 @@
 import os
 import threading
-
 from pathlib import Path
 from ..user import User
 from ..message import Message, ProcessMessage, MagicWormhole
@@ -9,10 +8,6 @@ import pika
 
 
 class ResearchAPI:
-    """
-    The main class for the Research API. It handles user interactions, file management, and messaging.
-    """
-
     def __init__(self, log_type, log_level):
         Log.setOutput(log_type, log_level)
         self.user = User()

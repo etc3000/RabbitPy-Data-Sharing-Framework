@@ -3,7 +3,6 @@ class Constants:
     This class contains constant values that are used throughout the application.
     It should not be instantiated.
     """
-
     # Message Types
     ANNOUNCE_MESSAGE = "announce_data"  # Message type for announcing data
     CAN_TRANSLATE = "can_translate"  # Message type for indicating translation capability
@@ -31,8 +30,6 @@ class Constants:
     # TODO: find more secure way of storing variables for distribution
     # RABBITMQ_URI = "amqps://xowvnltv:hwYeKNw5yGW6mg_7NoUx-QS7lDzGNael@woodpecker.rmq.cloudamqp.com/xowvnltv"
     RABBITMQ_URI = "amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb"
-    # URI for connecting to the RabbitMQ server
-
     def __init__(self):
         """
         Raises an error if an attempt is made to instantiate the Constants class.

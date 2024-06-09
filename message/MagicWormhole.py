@@ -4,6 +4,7 @@ from threading import Thread
 from typing import List
 from message import Message
 
+
 class Wormhole:
     cwd = os.getcwd()
 
@@ -13,7 +14,7 @@ class Wormhole:
             while filename in existing_filenames:
                 name, file_format = filename.rsplit(".", 1)
                 num = name.rsplit("-", 1)[-1]
-                filename = f"{name.rsplit('-', 1)[0]}-{int(num)+1 if num.isdigit() else 2}.{file_format}"
+                filename = f"{name.rsplit('-', 1)[0]}-{int(num) + 1 if num.isdigit() else 2}.{file_format}"
         return filename
 
     @staticmethod
@@ -40,6 +41,7 @@ class Wormhole:
             process.communicate()
             if connection is not None and user_id is not None and message is not None and filepath is not None:
                 connection.direct(message, user_id, f"File '{os.path.basename(filepath)}' sent successfully.")
+
         thread = Thread(target=run_thread)
         thread.start()
         return thread
