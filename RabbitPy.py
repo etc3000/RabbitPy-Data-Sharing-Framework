@@ -122,6 +122,9 @@ rmq_connection = None
 #         rmq_connection.close()
 #         rmq_connection = None
 #         print("Connection to the RabbitMQ server has been closed.")
+# -------------------------------------------------------------
+'''Operation Handling Functions'''
+
 
 def handle_user_registration(user_id, password):
     user = User(user_id)
@@ -184,7 +187,9 @@ def handle_add_want_format(username, format):
 
 def handle_add_convert_format(username, source_format, target_format):
     user = User(username)  # Assuming User class has been imported and user exists
-    user.convert[source_format] = target_format.split()
+    # user.convert[source_format] = target_format.split()
+    # print(f"Conversion format {source_format}:{target_format} has been added for user {username}.")
+    user.add_convert_format(source_format, target_format)
     print(f"Conversion format {source_format}:{target_format} has been added for user {username}.")
 
 
@@ -210,6 +215,7 @@ def handle_download(file_path):
 #
 # def handle_magic_wormhole(file_path, user_id):
 #     Wormhole.send(rmq_connection, user_id, Message(user_id, "Sending file"), file_path)
+
 def handle_receive_file():
     command, filename = input("Enter command and filename (separated by space): ").split()
     user = input("Enter user: ")
@@ -234,7 +240,17 @@ def handle_close_connection():
         rmq_connection = None
         print("Connection to the RabbitMQ server has been closed.")
 
-# TODO: Reformat code below into new functions above, better readability and modularity
+
+# -------------------------------------------------------------
+''' Data Operation Functions '''
+
+
+def check_user_formats(username):
+    user = User(username)  # Assuming User class has been imported and user exists
+    print(f"User {username} wants these formats: {user.want_formats}")
+    print(f"User {username} can convert these formats: {user.convert_formats}")
+
+
 def upload_file(channel, routing_key, file_path):
     with open(file_path, 'rb') as file:
         file_data = file.read()
@@ -257,8 +273,12 @@ def download_file(channel, queue_name, file_path):
         channel.basic_ack(method_frame.delivery_tag)
 
 
+# -------------------------------------------------------------
 # TODO: Construct a persistent connection that allows for multiple commands without KeyboardInterrupt
 # TODO: Ask user for command line, console, or GUI version upon script launch?
+'''Main Function'''
+
+
 def main():
     global rmq_connection
     # parser = argparse.ArgumentParser(description='Interact with the Research API.')
@@ -331,10 +351,18 @@ def main():
     #     print(f"An error occurred: {e}")
     try:
         while True:
-            command = input("Enter command "
-                            "(register, login, convert, add-want-format, "
-                            "add-convert-format, upload, download, receive_messages, "
-                            "send_message, magicwormhole, close_connection): ")
+            command = input("Enter command:\n"
+                            "\tregister\n"
+                            "\tlogin\n"
+                            "\tconvert\n"
+                            "\tadd-want-format\n"
+                            "\tadd-convert-format\n"
+                            "\tupload\n"
+                            "\tdownload\n"
+                            "\treceive_messages\n"
+                            "\tsend_message\n"
+                            "\tmagicwormhole\n"
+                            "\tclose_connection\n")
 
             if command == 'register':
                 user_id, password = (
@@ -386,6 +414,10 @@ def main():
             elif command == 'close_connection':
                 handle_close_connection()
 
+            elif command == 'check_formats':
+                username = input("Enter username: ")
+                check_user_formats(username)
+
             else:
                 print("Invalid command.")
 
@@ -396,9 +428,20 @@ def main():
 if __name__ == '__main__':
     main()
 
+'''
 # final demo should have multiple clients connecting
 # Can use fake data, one person uploads, one person converts, one person downloads etc.
 
-# TODO: Modify demo to have a persistent connection.
-# User should only need to log in once and then issue arguments via the parser.
-# Connection should only be closed once the close argument is issued
+# Successful registration
+# Successful login
+# Successful add-want
+# Not successful add-conversion
+
+# Test file upload
+# Test file download
+# Test file conversion
+# Test message sending
+# Test message receiving
+# Test magic wormhole
+# Test close connection
+'''

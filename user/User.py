@@ -10,7 +10,7 @@ class User:
     The User class represents a user with various attributes and methods related to file conversion and messaging.
     """
     userID: str = field(default_factory=lambda: str(uuid4()))
-    want: List[str] = field(default_factory=list)
+    want_formats: List[str] = field(default_factory=list)
     convert: Dict[str, List[str]] = field(default_factory=dict)
     filepaths: List[Path] = field(default_factory=list)
     receivedMessages: Dict[str, Message] = field(default_factory=dict)
@@ -27,6 +27,7 @@ class User:
 
     def has_want_format(self, format):
         return format in self.want_formats
+
     @property
     def want_formats(self) -> List[str]:
         return self.want
