@@ -11,18 +11,24 @@ class User:
     """
     userID: str = field(default_factory=lambda: str(uuid4()))
     want_formats: List[str] = field(default_factory=list)
-    convert: Dict[str, List[str]] = field(default_factory=dict)
+    _convert_formats: Dict[str, List[str]] = field(default_factory=dict)
     filepaths: List[Path] = field(default_factory=list)
     receivedMessages: Dict[str, Message] = field(default_factory=dict)
     filesRequested: Dict[str, List[str]] = field(default_factory=dict)
     translationsRequested: Dict[str, List[str]] = field(default_factory=dict)
     requestMessage: Message = None
 
+    ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json',
+                       '.jpg', '.png', '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
+
     def __init__(self, user_id):
         self.user_id = user_id
         self.want_formats = []
+        self.convert_formats = {}
 
     def add_want_format(self, format):
+        if format not in self.ALLOWED_FORMATS:
+            raise ValueError(f"Invalid format. Allowed formats are {', '.join(self.ALLOWED_FORMATS)}")
         self.want_formats.append(format)
 
     def has_want_format(self, format):
@@ -38,14 +44,14 @@ class User:
 
     @property
     def convert_formats(self) -> Dict[str, List[str]]:
-        return self.convert
+        return self.convert_formats
 
     @convert_formats.setter
     def convert_formats(self, value):
-        self.convert = value
+        self._convert_formats = value
 
     def get_destination_formats(self, original_format) -> List[str]:
-        return self.convert.get(original_format, [])
+        return self.convert_formats.get(original_format, [])
 
     @property
     def all_filepaths(self) -> List[Path]:

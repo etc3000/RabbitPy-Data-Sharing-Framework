@@ -26,10 +26,14 @@ class Constants:
     FILESIZE = "filesize"  # Key for filesize
     CONTENT = "content"  # Key for content
 
+    ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json',
+                       '.jpg', '.png', '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
+
     # RabbitMQ Guest User Information
     # TODO: find more secure way of storing variables for distribution
     # RABBITMQ_URI = "amqps://xowvnltv:hwYeKNw5yGW6mg_7NoUx-QS7lDzGNael@woodpecker.rmq.cloudamqp.com/xowvnltv"
     RABBITMQ_URI = "amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb"
+    # jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x
     def __init__(self):
         """
         Raises an error if an attempt is made to instantiate the Constants class.

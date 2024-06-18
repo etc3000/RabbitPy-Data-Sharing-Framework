@@ -1,3 +1,1 @@
-user_credentials = {'ecooper': '1234',
-                    'daveh': 'teacherpass',
-                    'tomjones': 'iamnotreal00'}
+user_credentials = {'ecooper': '1234', 'daveh': 'teacherpass', 'kelvin22': 'kepler41'}

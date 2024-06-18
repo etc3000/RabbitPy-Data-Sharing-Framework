@@ -5,19 +5,36 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import tabula
 import json
-
-import pandas as pd
-import matplotlib.pyplot as plt
-import tabula
-import json
-
+from reportlab.pdfgen import canvas  #for creating pdf files
 
 # CSV to PDF
-def csv_to_pdf(csv_file_path, pdf_file_path):
-    df = pd.read_csv(csv_file_path)
-    fig, ax = plt.subplots()
-    df.plot(ax=ax)
-    fig.savefig(pdf_file_path)
+import pandas as pd
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+
+
+def csv_to_pdf(source_file, target_file):
+    # Read the CSV data
+    data = pd.read_csv(source_file)
+
+    # Create a figure and a single subplot
+    fig, ax = plt.subplots(figsize=(12, 4))
+
+    # Hide axes
+    ax.axis('off')
+
+    # Create a table and save it as a PDF
+    table = plt.table(cellText=data.values, colLabels=data.columns, cellLoc='center', loc='center')
+
+    # Auto scale the table
+    table.auto_set_font_size(False)
+    table.set_fontsize(10)
+    table.scale(1.2, 1.2)
+
+    # Save the figure to a PDF file
+    pdf_pages = PdfPages(target_file)
+    pdf_pages.savefig(fig, bbox_inches='tight')
+    pdf_pages.close()
 
 
 # PDF to CSV
@@ -44,7 +61,7 @@ def json_to_csv(source_file, target_file):
     df.to_csv(target_file, index=False)
 
 
-# CSV to Text
+# CSV to Text - Working
 def csv_to_text(source_file, target_file):
     df = pd.read_csv(source_file)
     df.to_csv(target_file, index=False, sep='\t')
@@ -58,10 +75,28 @@ def pdf_to_text(source_file, target_file):
 
 
 # Text to PDF
+'''
+Issues with this conversion
+'''
+
+
 def text_to_pdf(source_file, target_file):
+    # Open the source file and read the text
     with open(source_file, 'r') as f:
         text = f.read()
-    df = pd.DataFrame([text])
-    fig, ax = plt.subplots()
-    df.plot(ax=ax)
-    fig.savefig(target_file)
+
+    # Create a new PDF file
+    c = canvas.Canvas(target_file)
+
+    # Add the text to the PDF file
+    textobject = c.beginText()
+    textobject.setTextOrigin(10, 730)
+    textobject.setFont("Helvetica", 14)
+
+    lines = text.split('\n')
+    for line in lines:
+        textobject.textLine(line)
+
+    c.drawText(textobject)
+    # Save the PDF file
+    c.save()
