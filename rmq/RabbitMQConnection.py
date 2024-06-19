@@ -37,6 +37,7 @@ from constants import Constants
 from message import Message
 from user import User
 
+
 class RabbitMQConnection:
     EXCHANGE_NAME = "research"
     EXCHANGE_TYPE = "direct"
@@ -63,5 +64,6 @@ class RabbitMQConnection:
 
     def get_channel(self) -> pika.channel:
         return self.channel
+
     def get_queue_name(self) -> str:
-        return (self.queue_name)
+        return self.queue_name

@@ -10,8 +10,9 @@ class User:
     The User class represents a user with various attributes and methods related to file conversion and messaging.
     """
     userID: str = field(default_factory=lambda: str(uuid4()))
-    want_formats: List[str] = field(default_factory=list)
-    _convert_formats: Dict[str, List[str]] = field(default_factory=dict)
+    _want_formats: List[str] = field(default_factory=list)
+    _convert_formats: List[str] = field(default_factory=list)
+
     filepaths: List[Path] = field(default_factory=list)
     receivedMessages: Dict[str, Message] = field(default_factory=dict)
     filesRequested: Dict[str, List[str]] = field(default_factory=dict)
@@ -21,30 +22,52 @@ class User:
     ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json',
                        '.jpg', '.png', '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
 
+    FORMAT_CONVERSIONS = [
+        'csv_to_pdf',
+        'pdf_to_csv',
+        'csv_to_json',
+        'text_to_csv',
+        'json_to_csv',
+        'csv_to_text',
+        'pdf_to_text',
+        'text_to_pdf']
+
     def __init__(self, user_id):
         self.user_id = user_id
-        self.want_formats = []
-        self.convert_formats = {}
+        self._want_formats = []
+        self._convert_formats = []
 
     def add_want_format(self, format):
         if format not in self.ALLOWED_FORMATS:
             raise ValueError(f"Invalid format. Allowed formats are {', '.join(self.ALLOWED_FORMATS)}")
-        self.want_formats.append(format)
+        self._want_formats.append(format)
+
+    def remove_want_format(self, format):
+        if format in self._want_formats:
+            self._want_formats.remove(format)
+        else:
+            raise ValueError(f"Format {format} is not in the want_formats list.")
+
+    def add_convert_format(self, source_format, destination_format):
+        if source_format not in self.ALLOWED_FORMATS or destination_format not in self.ALLOWED_FORMATS:
+            raise ValueError(
+                f"Invalid conversion. Formats must consist of the following:{', '.join(self.ALLOWED_FORMATS)}")
+        self._convert_formats.append(f"{source_format} to {destination_format}")
 
     def has_want_format(self, format):
-        return format in self.want_formats
+        return format in self._want_formats
 
     @property
     def want_formats(self) -> List[str]:
-        return self.want
+        return self._want_formats
 
     @want_formats.setter
     def want_formats(self, value):
-        self.want = value
+        self._want_formats = value
 
     @property
-    def convert_formats(self) -> Dict[str, List[str]]:
-        return self.convert_formats
+    def convert_formats(self) -> List[str]:
+        return self._convert_formats
 
     @convert_formats.setter
     def convert_formats(self, value):

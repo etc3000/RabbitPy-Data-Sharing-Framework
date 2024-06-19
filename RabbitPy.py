@@ -8,7 +8,7 @@ from message import *
 from my_logging.Log import Log
 import shell_application.File_Function as ff
 from constants import Constants
-from shell_application.user_list import user_credentials
+from user_list import user_credentials
 from rmq.RabbitMQConnection import RabbitMQConnection
 import pika
 from urllib.parse import urlparse
@@ -16,9 +16,24 @@ from urllib.parse import urlparse
 rmq_connection = None
 # -------------------------------------------------------------
 '''Operation Handling Functions'''
+ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json',
+                   '.jpg', '.png', '.jpeg', '.gif',
+                   '.bmp', '.tiff', '.svg']
+
+FORMAT_CONVERSIONS = [
+        'csv_to_pdf',
+        'pdf_to_csv',
+        'csv_to_json',
+        'text_to_csv',
+        'json_to_csv',
+        'csv_to_text',
+        'pdf_to_text',
+        'text_to_pdf']
+
+user_formats = {}
 
 
-def publish_login_mesaage(user_id, action):
+def publish_login_message(user_id, action):
     global rmq_connection
     channel = rmq_connection.channel()
     channel.queue_declare(queue='login')
@@ -29,28 +44,24 @@ def publish_login_mesaage(user_id, action):
 
 def handle_user_registration(user_id, password):
     user = User(user_id)
-    # Load existing users
-    try:
-        with open("user_credentials.json", "r") as user_base:
-            user_credentials = json.load(user_base)
-    except FileNotFoundError:
-        user_credentials = {}
+    user_formats[user_id] = user  # Add the user to the user_formats dictionary
 
     # Add new user
     user_credentials[user_id] = password
     print(f"User {user_id} registered successfully.")
-    publish_login_mesaage(user_id, "registered")
+    publish_login_message(user_id, "registered")
 
+    create_user_queue(user_id)
     # Save updated user list
-    with open("user_credentials.json", "w") as user_base:
-        json.dump(user_credentials, user_base)
+    with open("shell_application/user_list.py", "w") as user_base:
+        user_base.write(f"user_credentials = {user_credentials}")
 
     return user
 
 
 def handle_user_login(user_id, password):
-    if user_id is not None:
-        publish_login_mesaage(user_id, "logged in")
+    # if user_id is not None:
+    #     publish_login_message(user_id, "has logged in")
 
     if user_id in user_credentials and password == user_credentials[user_id]:
         print(f"User {user_id} logged in successfully.")
@@ -58,6 +69,7 @@ def handle_user_login(user_id, password):
         try:
             rmq_connection = pika.BlockingConnection(pika.URLParameters(url))
             print("Successfully connected to the RabbitMQ server.")
+            publish_login_message(user_id, "has logged in")
         except pika.exceptions.AMQPConnectionError:
             print("Failed to connect to the RabbitMQ server.")
             return None
@@ -96,18 +108,39 @@ def handle_file_conversion(source_file, target_file, conversion_type):
 
 
 def handle_add_want_format(username, format):
-    print('Supported formats: ', Constants.ALLOWED_FORMATS)
-    user = User(username)  # Assuming User class has been imported and user exists
-    user.add_want_format(format)
-    print(f"Format {format} has been added for user {username}.")
+    # print('Supported formats: ', Constants.ALLOWED_FORMATS)
+    if format in ALLOWED_FORMATS:
+        user = User(username)  # Assuming User class has been imported and user exists
+        user.add_want_format(format)
+        print(f"Format {format} has been added for user {username}.")
+    else:
+        print(f"Invalid format. Please choose from the following: {ALLOWED_FORMATS}")
 
 
-def handle_add_convert_format(username, source_format, target_format):
-    user = User(username)  # Assuming User class has been imported and user exists
-    # user.convert[source_format] = target_format.split()
-    # print(f"Conversion format {source_format}:{target_format} has been added for user {username}.")
+# def handle_add_convert_format(username, source_format, target_format):
+#     user = user_formats.get(username)  # Fetch the user from the user_formats dictionary
+#     if user is None:
+#         print(f"User {username} does not exist.")
+#         return
+#     user.add_convert_format(source_format, target_format)
+#     print(f"Conversion format {source_format} to {target_format} has been added for user {username}.")
+def handle_add_convert_format(username):
+    user = user_formats.get(username)  # Fetch the user from the user_formats dictionary
+    if user is None:
+        print(f"User {username} does not exist.")
+        return
+
+    print("Select a conversion format:")
+    for i, format in enumerate(User.FORMAT_CONVERSIONS, start=1):
+        print(f"{i}. {format}")
+
+    format_index = int(input("Enter the number of your choice: ")) - 1
+    format_choice = User.FORMAT_CONVERSIONS[format_index]
+
+    source_format, target_format = format_choice.split('_to_')
+
     user.add_convert_format(source_format, target_format)
-    print(f"Conversion format {source_format}:{target_format} has been added for user {username}.")
+    print(f"Conversion format {source_format} to {target_format} has been added for user {username}.")
 
 
 def handle_upload(file_path):
@@ -166,7 +199,11 @@ def handle_close_connection():
 
 
 def check_user_formats(username):
-    user = User(username)  # Assuming User class has been imported and user exists
+    user = user_formats.get(username)  # Assuming User class has been imported and user exists
+    if user is None:
+        print(f"User {username} does not exist.")
+        return
+
     print(f"User {username} wants these formats: {user.want_formats}")
     print(f"User {username} can convert these formats: {user.convert_formats}")
 
@@ -193,6 +230,14 @@ def download_file(channel, queue_name, file_path):
         channel.basic_ack(method_frame.delivery_tag)
 
 
+def create_user_queue(user_id):
+    global rmq_connection
+    channel = rmq_connection.channel()
+    channel.queue_declare(queue=user_id)
+    message = "Queue {" + user_id + "} has been created"
+    channel.basic_publish(exchange='', routing_key='user_id', body=message)
+
+
 # -------------------------------------------------------------
 # TODO: Ask user for command line, console, or GUI version upon script launch?
 '''Main Function'''
@@ -207,8 +252,6 @@ def main():
     except pika.exceptions.AMQPConnectionError:
         print("Failed to connect to the RabbitMQ server.")
         return
-    # https://shark.rmq.cloudamqp.com/#/connections
-    # User selects parser args, console, or GUI here
 
     print("Welcome to the RabbitPy Data-Sharing Framework! \n"
           "Please select an interface to begin.\n")
@@ -220,9 +263,7 @@ def main():
 
         if command == 'register':
             user_id = input("Please create a user_id: ")
-            # Could randomized passwords provide security as long as user remembers?
             password = input("Please create a password: ")
-            handle_user_registration(user_id, password)
             handle_user_registration(user_id, password)
 
         elif command == 'login':
@@ -233,113 +274,19 @@ def main():
                 print("Invalid username or password.")
 
         elif command == 'close_connection':
-            # run close_connection, same as below
             return
 
         else:
             print("Invalid command.")
 
-    # exp = input("Enter 0 for Python Console \n,
-    # 1 for command-line parser \n,
-    # or 2 for the GUI experience:\n")
-
-    # if exp == 0:
-    #     print("Python Console Experience Selected.")
-    #     Run the console version of the program
-
-    # elif exp == 1:
-    #     print("Command-Line Parser Experience Selected.")
-    #     Run parser args
-
-    # elif exp == 2:
-    #     print("GUI Experience Selected.")
-    #     Run the GUI version of the program
-
-    # Save user preferences for experience? Probably not necessary
-
-    # parser = argparse.ArgumentParser(description='Interact with the Research API.')
-    # parser.add_argument('--register', nargs=2, help='Register a new user.')
-    # parser.add_argument('--login', nargs=2, help='Login as an existing user.')
-    # # parser.add_argument('--add-want-format', type=str, help='Add a file format the user wants.')
-    # parser.add_argument('--add-want-format', nargs=2, metavar=('username', 'format'),
-    #                     help='Add a file format the user wants.')
-    #
-    # # parser.add_argument('--add-convert-format', type=str, help='Add a file format the user can convert to.')
-    # parser.add_argument('--add-convert-format', nargs=3, metavar=('username', 'source_format', 'target_format'),
-    #                     help='Add a file format the user can convert to.')
-    #
-    # # might be a good idea to be able to remove formats as well
-    #
-    # parser.add_argument('--receive_messages', action='store_true',
-    #   help='Receive any messages from the user\'s queue.')
-    # parser.add_argument('--send_message', nargs=2, help='Send a message to another user.')
-    # parser.add_argument('--convert', nargs=3, help='Convert a file from one format to another.')
-    # parser.add_argument('--upload', nargs=1, help='Upload a file.')
-    # parser.add_argument('--download', nargs=1, help='Download a file.')
-    # parser.add_argument('--magicwormhole', nargs=2, help='Choose file to send to another user')
-    # parser.add_argument('--close_connection', action='store_true',
-    #   help='Close the connection to the RabbitMQ server.')
-    #
-    # args = parser.parse_args()
-    #
-    # user = None
-    # if args.register:
-    #     user = handle_user_registration(args)
-
-    # try:
-    #     if args.login:
-    #         user_id = handle_user_login(args)
-    #         if user_id is None:
-    #             return
-    #
-    #     while True:
-    #         # user_command = input("Enter a command: ")
-    #         if args.convert:
-    #             # user_command = 'convert'
-    #             handle_file_conversion(args)
-    #
-    #         elif args.add_want_format:
-    #             # user_command = 'add_want_format'
-    #             username, format = args.add_want_format
-    #             handle_add_want_format(username, format)
-    #
-    #         elif args.add_convert_format:
-    #             username, source_format, target_format = args.add_convert_format
-    #             handle_add_convert_format(username, source_format, target_format)
-    #
-    #         elif args.upload:
-    #             handle_upload(args)
-    #
-    #         elif args.download:
-    #             handle_download(args)
-    #
-    #         elif args.receive_messages:
-    #             handle_receive_file(args)
-    #
-    #         elif args.send_message:
-    #             handle_send_message(args, rmq_connection)
-    #
-    #         elif args.magicwormhole:
-    #             handle_magic_wormhole(args)
-    #
-    #         elif args.close_connection:
-    #             handle_close_connection(args, rmq_connection)
-    #
-    # except Exception as e:
-    #     print(f"An error occurred: {e}")
     try:
         while True:
             command = input("Enter command:\n"
-                            "\tconvert\n"
-                            "\tadd-want-format\n"
-                            "\tadd-convert-format\n"
-                            "\tupload\n"
-                            "\tdownload\n"
-                            "\treceive_messages\n"
-                            "\tsend_message\n"
+                            "\tconvert \tadd-want-format \tadd-convert-format \tcheck_formats"
+                            "\tupload \tdownload \treceive_messages \tsend_message\n"
                             "\tmagicwormhole\n"
                             "\tclose_connection\n"
-                            "\tcheck_formats\n")
+                            )
 
             if command == 'convert':
                 source_file = input("Enter source_file: ")
@@ -352,9 +299,7 @@ def main():
                 handle_add_want_format(user_id, format)
 
             elif command == 'add-convert-format':
-                source_format = input("Enter source_format: ")
-                target_format = input("Enter target_format: ")
-                handle_add_convert_format(user_id, source_format, target_format)
+                handle_add_convert_format(user_id)
 
             elif command == 'upload':
                 file_path = input("Enter file_path: ")
@@ -380,6 +325,7 @@ def main():
             elif command == 'close_connection':
                 handle_close_connection()
                 user_id = None
+                break
 
             elif command == 'check_formats':
                 check_user_formats(user_id)
@@ -393,7 +339,6 @@ def main():
 
 if __name__ == '__main__':
     main()
-
 '''
 # final demo should have multiple clients connecting
 # Can use fake data, one person uploads, one person converts, one person downloads etc.
