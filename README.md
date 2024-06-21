@@ -1,4 +1,4 @@
-# Python&Rabbit
+# Python and RabbitMQ-based data sharing framework
 Python RabbitMQ Data-Sharing Framework
 
 
