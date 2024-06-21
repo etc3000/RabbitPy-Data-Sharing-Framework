@@ -14,22 +14,10 @@ import pika
 from urllib.parse import urlparse
 
 rmq_connection = None
-# -------------------------------------------------------------
-'''Operation Handling Functions'''
-ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json',
-                   '.jpg', '.png', '.jpeg', '.gif',
-                   '.bmp', '.tiff', '.svg']
 
-FORMAT_CONVERSIONS = [
-        'csv_to_pdf',
-        'pdf_to_csv',
-        'csv_to_json',
-        'text_to_csv',
-        'json_to_csv',
-        'csv_to_text',
-        'pdf_to_text',
-        'text_to_pdf']
-
+ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json', '.jpg', '.png', '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
+FORMAT_CONVERSIONS = ['csv_to_pdf', 'pdf_to_csv', 'csv_to_json', 'text_to_csv', 'json_to_csv', 'csv_to_text',
+                      'pdf_to_text', 'text_to_pdf']
 user_formats = {}
 
 
@@ -53,18 +41,17 @@ def handle_user_registration(user_id, password):
 
     create_user_queue(user_id)
     # Save updated user list
-    with open("shell_application/user_list.py", "w") as user_base:
-        user_base.write(f"user_credentials = {user_credentials}")
-
+    with open("user_credentials.json", "w") as user_base:
+        json.dump(user_credentials, user_base)
+        # JSON here will save our user info over multiple sessions
     return user
 
 
 def handle_user_login(user_id, password):
-    # if user_id is not None:
-    #     publish_login_message(user_id, "has logged in")
+    with open("user_credentials.json", "r") as user_base:
+        user_credentials = json.load(user_base)
 
     if user_id in user_credentials and password == user_credentials[user_id]:
-        print(f"User {user_id} logged in successfully.")
         url = 'amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb'
         try:
             rmq_connection = pika.BlockingConnection(pika.URLParameters(url))
@@ -109,49 +96,50 @@ def handle_file_conversion(source_file, target_file, conversion_type):
 
 def handle_add_want_format(username, format):
     # print('Supported formats: ', Constants.ALLOWED_FORMATS)
+    if username not in user_formats:
+        print(f"User {username} does not exist.")
+        return
+
     if format in ALLOWED_FORMATS:
-        user = User(username)  # Assuming User class has been imported and user exists
+        user = user_formats[username]  # Assuming User class has been imported and user exists
         user.add_want_format(format)
         print(f"Format {format} has been added for user {username}.")
     else:
         print(f"Invalid format. Please choose from the following: {ALLOWED_FORMATS}")
 
 
-# def handle_add_convert_format(username, source_format, target_format):
-#     user = user_formats.get(username)  # Fetch the user from the user_formats dictionary
-#     if user is None:
-#         print(f"User {username} does not exist.")
-#         return
-#     user.add_convert_format(source_format, target_format)
-#     print(f"Conversion format {source_format} to {target_format} has been added for user {username}.")
 def handle_add_convert_format(username):
-    user = user_formats.get(username)  # Fetch the user from the user_formats dictionary
-    if user is None:
+    if username not in user_formats:
+        print(f"User {username} does not exist.")
+        return
+
+    user = user_formats[username]  # Fetch the user from the user_formats dictionary
+    if username not in user_credentials:
         print(f"User {username} does not exist.")
         return
 
     print("Select a conversion format:")
-    for i, format in enumerate(User.FORMAT_CONVERSIONS, start=1):
+    for i, format in enumerate(FORMAT_CONVERSIONS, start=1):
         print(f"{i}. {format}")
 
     format_index = int(input("Enter the number of your choice: ")) - 1
-    format_choice = User.FORMAT_CONVERSIONS[format_index]
+    format_choice = FORMAT_CONVERSIONS[format_index]
 
     source_format, target_format = format_choice.split('_to_')
-
-    user.add_convert_format(source_format, target_format)
-    print(f"Conversion format {source_format} to {target_format} has been added for user {username}.")
+    user.add_convert_format("." + source_format, "." + target_format)
 
 
 def handle_upload(file_path):
     # Assuming a function to upload files exists
-    # Upload to computer/server
+    # Prepare a file to upload
+    # Send to other computer/ Rabbit MQ server
+    # Let people know that the file has been uploaded if they are listening or are subscribed
     upload_file(file_path)
 
 
 def handle_download(file_path):
     # Assuming a function to download files exists
-    # Download from sender via Magic Wormhole
+    # Download from sender via Magic Wormhole or RabbitMQ
     download_file(file_path)
 
 
@@ -175,13 +163,14 @@ def handle_receive_file():
 
 
 def handle_send_message(message_text, user_id):
-    user = input("Enter user: ")
-    message = Message(user, message_text)
-    rmq_connection.direct(message, user_id)
+    #user = input("Enter user: ")
+    #message = Message(user, message_text)
+    rmq_connection.direct(message_text, user_id)
 
 
 def handle_magic_wormhole(file_path, user_id):
     user = input("Enter user: ")
+    # select file to share
     Wormhole.send(rmq_connection, user_id, Message(user, "Sending file"), file_path)
 
 
@@ -199,16 +188,18 @@ def handle_close_connection():
 
 
 def check_user_formats(username):
-    user = user_formats.get(username)  # Assuming User class has been imported and user exists
-    if user is None:
+    if username not in user_credentials:
         print(f"User {username} does not exist.")
         return
 
-    print(f"User {username} wants these formats: {user.want_formats}")
-    print(f"User {username} can convert these formats: {user.convert_formats}")
+    user = user_formats[username]
+    print(f"User {username} wants these formats: {user._want_formats}")
+    print(f"User {username} can convert these formats: {user._convert_formats}")
 
 
 def upload_file(channel, routing_key, file_path):
+    # This method should make sure a file path is valid before uploading it
+    # Specify channel to send to / routing key / etc.
     with open(file_path, 'rb') as file:
         file_data = file.read()
     channel.basic_publish(
