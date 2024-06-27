@@ -26,23 +26,13 @@ class Constants:
     FILESIZE = "filesize"  # Key for filesize
     CONTENT = "content"  # Key for content
 
-    ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json',
-                       '.jpg', '.png', '.jpeg', '.gif',
-                       '.bmp', '.tiff', '.svg']
+    ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json','.jpg', '.png',
+                       '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
 
     FORMAT_CONVERSIONS = [
-        'csv_to_pdf',
-        'pdf_to_csv',
-        'csv_to_json',
-        'text_to_csv',
-        'json_to_csv',
-        'csv_to_text',
-        'pdf_to_text',
-        'text_to_pdf']
+        'csv_to_pdf','pdf_to_csv','csv_to_json','text_to_csv',
+        'json_to_csv','csv_to_text','pdf_to_text','text_to_pdf']
 
-    # RabbitMQ Guest User Information
-    # TODO: find more secure way of storing variables for distribution
-    # RABBITMQ_URI = "amqps://xowvnltv:hwYeKNw5yGW6mg_7NoUx-QS7lDzGNael@woodpecker.rmq.cloudamqp.com/xowvnltv"
     RABBITMQ_URI = "amqps://crnulcjb:jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x@shark.rmq.cloudamqp.com/crnulcjb"
 
     # jTi5qkc_4BJQy-J4fmMk6CEJn1_phN3x

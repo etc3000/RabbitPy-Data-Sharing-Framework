@@ -67,3 +67,11 @@ class RabbitMQConnection:
 
     def get_queue_name(self) -> str:
         return self.queue_name
+
+    def list_queues(self):
+        channel = self.connection.channel()
+        return [queue.method.queue for queue in channel.queue_declare(queue='', passive=True)]
+
+    def list_exchanges(self):
+        channel = self.connection.channel()
+        return [exchange.exchange for exchange in channel.exchange_declare(exchange='', passive=True)]

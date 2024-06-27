@@ -1,6 +1,6 @@
 import argparse
 import json
-
+import os
 from message.MagicWormhole import Wormhole
 from message.Message import Message
 from user.User import User
@@ -14,7 +14,6 @@ import pika
 from urllib.parse import urlparse
 
 rmq_connection = None
-
 ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json', '.jpg', '.png', '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
 FORMAT_CONVERSIONS = ['csv_to_pdf', 'pdf_to_csv', 'csv_to_json', 'text_to_csv', 'json_to_csv', 'csv_to_text',
                       'pdf_to_text', 'text_to_pdf']
@@ -129,13 +128,19 @@ def handle_add_convert_format(username):
     user.add_convert_format("." + source_format, "." + target_format)
 
 
-def handle_upload(file_path):
-    # Assuming a function to upload files exists
-    # Prepare a file to upload
-    # Send to other computer/ Rabbit MQ server
-    # Let people know that the file has been uploaded if they are listening or are subscribed
-    upload_file(file_path)
+def handle_upload(user_id, file_path, queue_name, exchange_name):
+    # Extract the file extension
+    file_extension = os.path.splitext(file_path)[1]
 
+    # Check against the want_formats of all users
+    for user in user_formats.values():
+        if file_extension in user.want_formats:
+            # Send a notification to the user
+            notification = f"User {user_id} has uploaded a file with a format you want: {file_path}"
+            rmq_connection.direct(notification, user.user_id, queue_name, exchange_name)
+
+    # Upload the file
+    upload_file(file_path, queue_name, exchange_name)
 
 def handle_download(file_path):
     # Assuming a function to download files exists
@@ -143,29 +148,14 @@ def handle_download(file_path):
     download_file(file_path)
 
 
-# def handle_receive_file():
-#     command, filename = input("Enter command and filename (separated by space): ").split()
-#     Wormhole.receive(rmq_connection, Message(args.user, "Receiving file"), command, filename, args.user)
-#
-#
-# def handle_send_message(message_text, user_id):
-#     message = Message(args.user, message_text)
-#     rmq_connection.direct(message, user_id)
-#
-#
-# def handle_magic_wormhole(file_path, user_id):
-#     Wormhole.send(rmq_connection, user_id, Message(user_id, "Sending file"), file_path)
-
 def handle_receive_file():
     command, filename = input("Enter command and filename (separated by space): ").split()
     user = input("Enter user: ")
     Wormhole.receive(rmq_connection, Message(user, "Receiving file"), command, filename, user)
 
 
-def handle_send_message(message_text, user_id):
-    #user = input("Enter user: ")
-    #message = Message(user, message_text)
-    rmq_connection.direct(message_text, user_id)
+def handle_send_message(message_text, user_id, queue_name, exchange_name):
+    rmq_connection.direct(message_text, user_id, queue_name, exchange_name)
 
 
 def handle_magic_wormhole(file_path, user_id):
@@ -197,14 +187,15 @@ def check_user_formats(username):
     print(f"User {username} can convert these formats: {user._convert_formats}")
 
 
-def upload_file(channel, routing_key, file_path):
+def upload_file(file_path, queue_name, exchange_name):
     # This method should make sure a file path is valid before uploading it
     # Specify channel to send to / routing key / etc.
+    channel = rmq_connection.channel()  # Assuming rmq_connection is your RabbitMQ connection
     with open(file_path, 'rb') as file:
         file_data = file.read()
     channel.basic_publish(
-        exchange='',
-        routing_key=routing_key,
+        exchange=exchange_name,
+        routing_key=queue_name,
         body=file_data,
         properties=pika.BasicProperties(
             content_type='application/octet-stream',
@@ -311,6 +302,8 @@ def main():
             elif command == 'magicwormhole':
                 file_path = input("Enter file_path: ")
                 user_id_to_send = input("Enter user_id to send file to: ")
+                print("Available queues: ", RabbitMQConnection.list_queues)
+                print("Available exchanges: ", RabbitMQConnection.list_exchanges)
                 handle_magic_wormhole(file_path, user_id_to_send)
 
             elif command == 'close_connection':
