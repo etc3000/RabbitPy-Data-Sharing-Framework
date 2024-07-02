@@ -10,3 +10,12 @@ This research consists of a Python translation of the Java API created in the pr
 
 Original project can be found at: https://github.com/Andrew-Nguyen-2/Thesis-Research-API
 Iterative Development on Java Portions: https://github.com/etc3000/Thesis-Research-API/blob/main/README.md
+
+
+Required Packages
+- pika
+- pandas
+- matplotlib
+- tabula
+- json
+(Install via terminal or through IDE)
