@@ -19,4 +19,5 @@ Required Packages
 - tabula
 - json
 - reportlab
+- magic-wormhole
 (Install via terminal or through IDE)
