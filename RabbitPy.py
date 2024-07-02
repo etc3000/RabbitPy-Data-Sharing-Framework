@@ -1,3 +1,5 @@
+# -------------------------------------------------------------
+# 1. Import Statements
 import argparse
 import json
 import os
@@ -13,6 +15,8 @@ from rmq.RabbitMQConnection import RabbitMQConnection
 import pika
 from urllib.parse import urlparse
 
+# -------------------------------------------------------------
+# 2. Global Variables
 rmq_connection = None
 ALLOWED_FORMATS = ['.pdf', '.csv', '.txt', '.json', '.jpg', '.png', '.jpeg', '.gif', '.bmp', '.tiff', '.svg']
 FORMAT_CONVERSIONS = ['csv_to_pdf', 'pdf_to_csv', 'csv_to_json', 'text_to_csv', 'json_to_csv', 'csv_to_text',
@@ -20,6 +24,8 @@ FORMAT_CONVERSIONS = ['csv_to_pdf', 'pdf_to_csv', 'csv_to_json', 'text_to_csv', 
 user_formats = {}
 
 
+# -------------------------------------------------------------
+# 3. User Registration and Login Functions
 def publish_login_message(user_id, action):
     global rmq_connection
     channel = rmq_connection.channel()
@@ -56,15 +62,35 @@ def handle_user_login(user_id, password):
             rmq_connection = pika.BlockingConnection(pika.URLParameters(url))
             print("Successfully connected to the RabbitMQ server.")
             publish_login_message(user_id, "has logged in")
+
         except pika.exceptions.AMQPConnectionError:
             print("Failed to connect to the RabbitMQ server.")
             return None
+
+        user = User(user_id)
+        user_formats[user_id] = user
+
+        # Load the user's want formats from a JSON file if it exists
+        want_formats_file = f"{user_id}_want_formats.json"
+        if os.path.exists(want_formats_file):
+            with open(want_formats_file, "r") as file:
+                user.want_formats = json.load(file)
+
+        # Load the user's convert formats from a JSON file if it exists
+        convert_formats_file = f"{user_id}_convert_formats.json"
+        if os.path.exists(convert_formats_file):
+            with open(convert_formats_file, "r") as file:
+                user.convert_formats = json.load(file)
+
         return user_id
+
     else:
         print("Invalid username or password.")
         return None
 
 
+# -------------------------------------------------------------
+# 4. File Conversion Functions
 def handle_file_conversion(source_file, target_file, conversion_type):
     source_file = 'example/' + source_file
     target_file = 'example/' + target_file
@@ -93,6 +119,8 @@ def handle_file_conversion(source_file, target_file, conversion_type):
         return
 
 
+# -------------------------------------------------------------
+# 5. Format Handling Functions
 def handle_add_want_format(username, format):
     # print('Supported formats: ', Constants.ALLOWED_FORMATS)
     if username not in user_formats:
@@ -103,6 +131,11 @@ def handle_add_want_format(username, format):
         user = user_formats[username]  # Assuming User class has been imported and user exists
         user.add_want_format(format)
         print(f"Format {format} has been added for user {username}.")
+
+        # Save the user's want formats to a JSON file
+        with open(f"{username}_want_formats.json", "w") as file:
+            json.dump(user.want_formats, file)
+
     else:
         print(f"Invalid format. Please choose from the following: {ALLOWED_FORMATS}")
 
@@ -113,9 +146,9 @@ def handle_add_convert_format(username):
         return
 
     user = user_formats[username]  # Fetch the user from the user_formats dictionary
-    if username not in user_credentials:
-        print(f"User {username} does not exist.")
-        return
+    # if username not in user_credentials:
+    #     print(f"User {username} does not exist.")
+    #     return
 
     print("Select a conversion format:")
     for i, format in enumerate(FORMAT_CONVERSIONS, start=1):
@@ -127,8 +160,14 @@ def handle_add_convert_format(username):
     source_format, target_format = format_choice.split('_to_')
     user.add_convert_format("." + source_format, "." + target_format)
 
+    # Save the user's convert formats to a JSON file
+    with open(f"{username}_convert_formats.json", "w") as file:
+        json.dump(user.convert_formats, file)
 
-def handle_upload(user_id, file_path, queue_name, exchange_name):
+
+# -------------------------------------------------------------
+# 6. Upload and Download Functions
+def handle_upload(user_id, file_path):
     # Extract the file extension
     file_extension = os.path.splitext(file_path)[1]
 
@@ -137,31 +176,35 @@ def handle_upload(user_id, file_path, queue_name, exchange_name):
         if file_extension in user.want_formats:
             # Send a notification to the user
             notification = f"User {user_id} has uploaded a file with a format you want: {file_path}"
-            rmq_connection.direct(notification, user.user_id, queue_name, exchange_name)
+            rmq_connection.direct(notification, user.user_id)
 
     # Upload the file
-    upload_file(file_path, queue_name, exchange_name)
-
-def handle_download(file_path):
-    # Assuming a function to download files exists
-    # Download from sender via Magic Wormhole or RabbitMQ
-    download_file(file_path)
+    upload_file(file_path, user_id)
 
 
+def handle_download(queue_name):
+    # Download a message from the queue
+    message = download_message(queue_name)
+    print(f"Downloaded message: {message}")
+
+
+# -------------------------------------------------------------
+# 7. Message Handling Functions
 def handle_receive_file():
     command, filename = input("Enter command and filename (separated by space): ").split()
     user = input("Enter user: ")
     Wormhole.receive(rmq_connection, Message(user, "Receiving file"), command, filename, user)
 
 
-def handle_send_message(message_text, user_id, queue_name, exchange_name):
-    rmq_connection.direct(message_text, user_id, queue_name, exchange_name)
+def handle_send_message(message_text, user_id):
+    channel = rmq_connection.channel()  # Assuming rmq_connection is your RabbitMQ connection
+    channel.queue_declare(queue=user_id)  # Declare a queue
+    channel.basic_publish(exchange='', routing_key=user_id, body=message_text)  # Publish a message to the queue
 
 
 def handle_magic_wormhole(file_path, user_id):
-    user = input("Enter user: ")
-    # select file to share
-    Wormhole.send(rmq_connection, user_id, Message(user, "Sending file"), file_path)
+    recipient_user_id = input("Enter recipient user ID: ")
+    Wormhole.send(rmq_connection, user_id, Message(user_id, "Sending file"), file_path, recipient_user_id)
 
 
 def handle_close_connection():
@@ -174,22 +217,36 @@ def handle_close_connection():
 
 
 # -------------------------------------------------------------
-''' Data Operation Functions '''
-
-
+# 8. Data Operation Functions
 def check_user_formats(username):
-    if username not in user_credentials:
-        print(f"User {username} does not exist.")
-        return
+    with open("user_credentials.json", "r") as user_base:
+        user_credentials = json.load(user_base)
 
-    user = user_formats[username]
-    print(f"User {username} wants these formats: {user._want_formats}")
-    print(f"User {username} can convert these formats: {user._convert_formats}")
+        if username not in user_credentials:
+            print(f"User {username} does not exist.")
+            return
+
+        user = User(username)
+        user_formats[username] = user
+
+        # Load the user's want formats from a JSON file
+        want_formats_file = f"{username}_want_formats.json"
+        if os.path.exists(want_formats_file):
+            with open(want_formats_file, "r") as file:
+                user.want_formats = json.load(file)
+                print(f"User {username} wants these formats: {user.want_formats}")
+
+        # Load the user's convert formats from a JSON file
+        convert_formats_file = f"{username}_convert_formats.json"
+        if os.path.exists(convert_formats_file):
+            with open(convert_formats_file, "r") as file:
+                user.convert_formats = json.load(file)
+                print(f"User {username} can convert these formats: {user.convert_formats}")
 
 
-def upload_file(file_path, queue_name, exchange_name):
-    # This method should make sure a file path is valid before uploading it
-    # Specify channel to send to / routing key / etc.
+def upload_file(file_path, user_id):
+    queue_name = f'{user_id}'  # The queue name is based on the user_id
+    exchange_name = ''  # Using the default exchange
     channel = rmq_connection.channel()  # Assuming rmq_connection is your RabbitMQ connection
     with open(file_path, 'rb') as file:
         file_data = file.read()
@@ -199,17 +256,26 @@ def upload_file(file_path, queue_name, exchange_name):
         body=file_data,
         properties=pika.BasicProperties(
             content_type='application/octet-stream',
-            delivery_mode=2
+            delivery_mode=2,
+            headers={'filename': os.path.basename(file_path)}
         )
     )
 
 
-def download_file(channel, queue_name, file_path):
+def download_message(queue_name):
+    # This method should retrieve a message from the specified queue
+    channel = rmq_connection.channel()  # Assuming rmq_connection is your RabbitMQ connection
     method_frame, properties, body = channel.basic_get(queue_name)
     if method_frame:
-        with open(file_path, 'wb') as file:
-            file.write(body)
         channel.basic_ack(method_frame.delivery_tag)
+        filename= properties.headers['filename']
+        with open(filename, 'wb') as file:
+            file.write(body)
+        print(f"Downloaded message and saved to file: {filename}")
+        # return body.decode('utf-8')
+    else:
+        print("No messages in the queue.")
+        return None
 
 
 def create_user_queue(user_id):
@@ -221,9 +287,8 @@ def create_user_queue(user_id):
 
 
 # -------------------------------------------------------------
+# 9. Main Function
 # TODO: Ask user for command line, console, or GUI version upon script launch?
-'''Main Function'''
-
 
 def main():
     global rmq_connection
@@ -263,12 +328,9 @@ def main():
 
     try:
         while True:
-            command = input("Enter command:\n"
-                            "\tconvert \tadd-want-format \tadd-convert-format \tcheck_formats"
-                            "\tupload \tdownload \treceive_messages \tsend_message\n"
-                            "\tmagicwormhole\n"
-                            "\tclose_connection\n"
-                            )
+            command = input("Enter command:\n\tconvert | add-want-format | add-convert-format | check_formats\n"
+                            "\tupload | download | receive_messages | send_message | magicwormhole\n"
+                            "\tclose_connection\n")
 
             if command == 'convert':
                 source_file = input("Enter source_file: ")
@@ -277,33 +339,39 @@ def main():
                 handle_file_conversion(source_file, target_file, conversion_type)
 
             elif command == 'add-want-format':
-                format = input("Enter format: ")
-                handle_add_want_format(user_id, format)
+                want_format = input("Enter format: ")
+                handle_add_want_format(user_id, want_format)
 
             elif command == 'add-convert-format':
                 handle_add_convert_format(user_id)
 
             elif command == 'upload':
+                # Upload a file to RabbitMQ
+                print("RABBITMQ HAS A STRICT 2GB SIZE LIMIT, USE MAGICWORMHOLE FOR LARGER FILES!\n")
                 file_path = input("Enter file_path: ")
-                handle_upload(file_path)
+                if os.path.getsize(file_path) > 2 * 1024 * 1024 * 1024:
+                    print("The file is too large for RabbitMQ. Please use MagicWormhole.")
+
+                else:
+                    file_path = file_path.replace('"', '')
+                    handle_upload(user_id, file_path)
 
             elif command == 'download':
-                file_path = input("Enter file_path: ")
-                handle_download(file_path)
+                download_queue = input("Enter queue name to download from: ")
+                # select queue to download from
+                handle_download(download_queue)
 
             elif command == 'receive_messages':
                 handle_receive_file()
 
             elif command == 'send_message':
+                user_id_to_send = input("Enter recipient's user_id: ")
                 message_text = input("Enter message_text: ")
-                user_id_to_send = input("Enter user_id to send message to: ")
                 handle_send_message(message_text, user_id_to_send)
 
             elif command == 'magicwormhole':
                 file_path = input("Enter file_path: ")
                 user_id_to_send = input("Enter user_id to send file to: ")
-                print("Available queues: ", RabbitMQConnection.list_queues)
-                print("Available exchanges: ", RabbitMQConnection.list_exchanges)
                 handle_magic_wormhole(file_path, user_id_to_send)
 
             elif command == 'close_connection':
@@ -312,7 +380,8 @@ def main():
                 break
 
             elif command == 'check_formats':
-                check_user_formats(user_id)
+                username_to_check = input("Enter username to check formats for: ")
+                check_user_formats(username_to_check)
 
             else:
                 print("Invalid command.")
@@ -327,10 +396,6 @@ if __name__ == '__main__':
 # final demo should have multiple clients connecting
 # Can use fake data, one person uploads, one person converts, one person downloads etc.
 
-# Successful registration
-# Successful login
-# Successful add-want
-# Not successful add-conversion
 
 # Test file upload
 # Test file download
@@ -338,11 +403,7 @@ if __name__ == '__main__':
 # Test message sending 
 # Test message receiving
 # Test magic wormhole
-# Test close connection
 
 # Send message in RMQ to other user
-
-# Registration writing to a JSON file instead of user_list in user_credentials?
-# Define a queue for each user upon account creation?
-# Check how ACKs work in RMQ
+Check formats might want to specify which user to check formats for other than yourself
 '''
