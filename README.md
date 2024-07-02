@@ -18,4 +18,5 @@ Required Packages
 - matplotlib
 - tabula
 - json
+- reportlab
 (Install via terminal or through IDE)
